@@ -426,5 +426,8 @@
       checks = perSystem (system: self.flake.${system}.checks // {
         formatCheck = formatCheckFor system;
       });
+
+      hydraJobs.x86_64-linux =
+        self.checks.x86_64-linux // self.packages.x86_64-linux;
     };
 }
