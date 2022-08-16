@@ -107,19 +107,19 @@ library
   hs-source-dirs:  src/
   exposed-modules:
     SeabugOnchain.Api
-    SeabugOnchain.Lock
     SeabugOnchain.Contract.Aux
-    SeabugOnchain.Contract.ChangeOwner
     SeabugOnchain.Contract.Burn
+    SeabugOnchain.Contract.ChangeOwner
+    SeabugOnchain.Contract.FeeWithdraw
     SeabugOnchain.Contract.MarketplaceBuy
     SeabugOnchain.Contract.MarketplaceDeposit
     SeabugOnchain.Contract.MarketplaceRedeem
     SeabugOnchain.Contract.MarketplaceSetPrice
     SeabugOnchain.Contract.Mint
     SeabugOnchain.Contract.SetPrice
-    SeabugOnchain.Contract.FeeWithdraw
-    SeabugOnchain.Marketplace
     SeabugOnchain.Dao
+    SeabugOnchain.Lock
+    SeabugOnchain.Marketplace
     SeabugOnchain.Token
     SeabugOnchain.Types
 
@@ -132,8 +132,8 @@ executable seabug-pab
   ghc-options:   -Wall -threaded -rtsopts
   build-depends:
     , bot-plutus-interface
-    , seabug-onchain
     , optparse-applicative
+    , seabug-onchain
     , servant-client-core
 
 test-suite seabug-onchain-tests
@@ -156,7 +156,6 @@ test-suite seabug-onchain-tests
     , freer-extras
     , freer-simple
     , lens
-    , seabug-onchain
     , mtl
     , playground-common
     , plutus-contract
@@ -167,14 +166,13 @@ test-suite seabug-onchain-tests
     , plutus-pab
     , plutus-tx
     , plutus-tx-plugin
-    -- , plutus-simple-model
     , plutus-use-cases
-    -- , plutip
     , pretty-show
     , prettyprinter
     , QuickCheck
     , record-dot-preprocessor
     , record-hasfield
+    , seabug-onchain
     , tasty
     , tasty-expected-failure
     , tasty-hunit
@@ -182,25 +180,27 @@ test-suite seabug-onchain-tests
     , tasty-quickcheck
     , text
 
+  -- , plutus-simple-model
+  -- , plutip
   other-modules:
-    -- Test.Resources
+    Test.Script.FeeWithdraw
     Test.Script.TokenBurn
     Test.Script.TokenChangeOwner
     Test.Script.TokenChangePrice
-    Test.Script.TokenMint
-    Test.Script.TokenUnstake
-    Test.Script.TokenRestake
-    Test.Script.TokenMarketplaceSetPrice
     Test.Script.TokenMarketplaceBuy
     Test.Script.TokenMarketplaceRedeem
-    Test.Script.FeeWithdraw
+    Test.Script.TokenMarketplaceSetPrice
+    Test.Script.TokenMint
+    Test.Script.TokenRestake
+    Test.Script.TokenUnstake
     Test.Script.Values
     Test.Size
     Test.Trace
-    -- Test.Quickcheck
-    -- Test.Plutip
     Test.Utils
 
+  -- Test.Resources
+  -- Test.Quickcheck
+  -- Test.Plutip
   default-extensions:
     OverloadedStrings
     QuasiQuotes
