@@ -1,0 +1,210 @@
+cabal-version:      2.4
+name:               seabug-onchain
+version:            0.1.0.0
+license-file:       LICENSE
+author:             mlabs
+maintainer:         samuel@mlabs.city
+build-type:         Simple
+extra-source-files: CHANGELOG.md
+
+common common-imports
+  build-depends:
+    , aeson
+    , ansi-terminal
+    , base
+    , base16-bytestring
+    , binary
+    , bytestring
+    , cardano-api
+    , cardano-ledger-alonzo
+    , cardano-prelude
+    , containers
+    , data-default
+    , either
+    , extra
+    , freer-extras
+    , freer-simple
+    , insert-ordered-containers
+    , lens
+    , mtl
+    , openapi3
+    , playground-common
+    , plutus-chain-index
+    , plutus-chain-index-core
+    , plutus-contract
+    , plutus-core
+    , plutus-extra
+    , plutus-ledger
+    , plutus-ledger-api
+    , plutus-ledger-constraints
+    , plutus-numeric
+    , plutus-pab
+    , plutus-tx
+    , plutus-tx-plugin
+    , plutus-tx-spooky
+    , plutus-use-cases
+    , pretty-show
+    , prettyprinter
+    , purescript-bridge
+    , row-types
+    , serialise
+    , stm
+    , tasty
+    , tasty-hunit
+    , text
+
+common common-language
+  default-extensions:
+    NoImplicitPrelude
+    BangPatterns
+    DataKinds
+    DeriveAnyClass
+    DeriveFoldable
+    DeriveFunctor
+    DeriveGeneric
+    DeriveLift
+    DeriveTraversable
+    DerivingStrategies
+    ExplicitForAll
+    FlexibleContexts
+    FlexibleInstances
+    GeneralizedNewtypeDeriving
+    ImportQualifiedPost
+    LambdaCase
+    MonoLocalBinds
+    MultiParamTypeClasses
+    NumericUnderscores
+    OverloadedStrings
+    QuasiQuotes
+    RankNTypes
+    RecordWildCards
+    ScopedTypeVariables
+    StandaloneDeriving
+    TemplateHaskell
+    TupleSections
+    TypeApplications
+    TypeFamilies
+    TypeOperators
+    TypeSynonymInstances
+
+common common-configs
+  default-language: Haskell2010
+
+common common-ghc-options
+  ghc-options:
+    -fno-ignore-interface-pragmas -fno-omit-interface-pragmas
+    -fno-specialize -fno-strictness -fno-warn-orphans -fobject-code
+    -fplugin-opt PlutusTx.Plugin:defer-errors
+
+library
+  import:          common-imports
+  import:          common-language
+  import:          common-configs
+  import:          common-ghc-options
+  ghc-options:
+    -Wall -Wcompat -Wincomplete-uni-patterns -Wredundant-constraints
+    -Wmissing-export-lists -Wmissing-deriving-strategies -Werror
+
+  hs-source-dirs:  src/
+  exposed-modules:
+    SeabugOnchain.Api
+    SeabugOnchain.Lock
+    SeabugOnchain.Contract.Aux
+    SeabugOnchain.Contract.ChangeOwner
+    SeabugOnchain.Contract.Burn
+    SeabugOnchain.Contract.MarketplaceBuy
+    SeabugOnchain.Contract.MarketplaceDeposit
+    SeabugOnchain.Contract.MarketplaceRedeem
+    SeabugOnchain.Contract.MarketplaceSetPrice
+    SeabugOnchain.Contract.Mint
+    SeabugOnchain.Contract.SetPrice
+    SeabugOnchain.Contract.FeeWithdraw
+    SeabugOnchain.Marketplace
+    SeabugOnchain.Dao
+    SeabugOnchain.Token
+    SeabugOnchain.Types
+
+executable seabug-pab
+  import:        common-imports
+  import:        common-language
+  import:        common-configs
+  import:        common-ghc-options
+  main-is:       app/Main.hs
+  ghc-options:   -Wall -threaded -rtsopts
+  build-depends:
+    , bot-plutus-interface
+    , seabug-onchain
+    , optparse-applicative
+    , servant-client-core
+
+test-suite seabug-onchain-tests
+  import:             common-imports
+  import:             common-language
+  import:             common-configs
+  import:             common-ghc-options
+  type:               exitcode-stdio-1.0
+  hs-source-dirs:     test
+  main-is:            Main.hs
+  ghc-options:        -Wall -threaded -rtsopts
+
+  -- -fplugin=RecordDotPreprocessor
+
+  build-depends:
+    , base
+    , bot-plutus-interface
+    , containers
+    , data-default
+    , freer-extras
+    , freer-simple
+    , lens
+    , seabug-onchain
+    , mtl
+    , playground-common
+    , plutus-contract
+    , plutus-core
+    , plutus-ledger
+    , plutus-ledger-api
+    , plutus-ledger-constraints
+    , plutus-pab
+    , plutus-tx
+    , plutus-tx-plugin
+    , plutus-tx-spooky
+    -- , plutus-simple-model
+    , plutus-use-cases
+    -- , plutip
+    , pretty-show
+    , prettyprinter
+    , QuickCheck
+    , record-dot-preprocessor
+    , record-hasfield
+    , tasty
+    , tasty-expected-failure
+    , tasty-hunit
+    , tasty-plutus
+    , tasty-quickcheck
+    , text
+
+  other-modules:
+    -- Test.Resources
+    Test.Script.TokenBurn
+    Test.Script.TokenChangeOwner
+    Test.Script.TokenChangePrice
+    Test.Script.TokenMint
+    Test.Script.TokenUnstake
+    Test.Script.TokenRestake
+    Test.Script.TokenMarketplaceSetPrice
+    Test.Script.TokenMarketplaceBuy
+    Test.Script.TokenMarketplaceRedeem
+    Test.Script.FeeWithdraw
+    Test.Script.Values
+    Test.Size
+    Test.Trace
+    -- Test.Quickcheck
+    -- Test.Plutip
+    Test.Utils
+
+  default-extensions:
+    OverloadedStrings
+    QuasiQuotes
+    RecordWildCards
+    TupleSections

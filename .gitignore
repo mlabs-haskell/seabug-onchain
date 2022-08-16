@@ -1,0 +1,11 @@
+dist-newstyle/
+.stack-work/
+stack.yaml.lock
+result*
+*~
+*#
+plutus-pab.yaml
+pab-core.db
+.direnv/
+.envrc
+pab/*
