@@ -41,7 +41,6 @@ common common-imports
     , plutus-pab
     , plutus-tx
     , plutus-tx-plugin
-    , plutus-tx-spooky
     , plutus-use-cases
     , pretty-show
     , prettyprinter
@@ -168,7 +167,6 @@ test-suite seabug-onchain-tests
     , plutus-pab
     , plutus-tx
     , plutus-tx-plugin
-    , plutus-tx-spooky
     -- , plutus-simple-model
     , plutus-use-cases
     -- , plutip
