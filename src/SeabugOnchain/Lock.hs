@@ -36,7 +36,6 @@ import Ledger.Typed.Scripts (Any, TypedValidator, unsafeMkTypedValidator, wrapVa
 import Ledger.Value (Value (getValue), valueOf)
 import PlutusTx qualified
 import PlutusTx.AssocMap qualified as AssocMap
-import PlutusTx.Natural (Natural)
 import PlutusTx.Prelude
 import SeabugOnchain.Token (mkTokenName)
 import SeabugOnchain.Types
@@ -124,7 +123,7 @@ mkValidator _ lockup lockupEnd inDatum act ctx =
     checkNoSgMinted = isNothing . AssocMap.lookup (ld'sgNft inDatum) . getValue . txInfoMint $ info
 
     -- Checks that input contains corresponding Seabug NFT
-    checkInputContainsSg :: Natural -> PaymentPubKeyHash -> Bool
+    checkInputContainsSg :: Integer -> PaymentPubKeyHash -> Bool
     checkInputContainsSg price owner =
       let tn = mkTokenName $ NftId (ld'underlyingTn inDatum) price owner
           containsSg tx = valueOf (txOutValue tx) (ld'sgNft inDatum) tn == 1
@@ -151,7 +150,7 @@ mkValidator _ lockup lockupEnd inDatum act ctx =
     checkNoCO :: Bool
     checkNoCO = null . getContinuingOutputs $ ctx
 
-    checkSgBurned :: Natural -> PaymentPubKeyHash -> Bool
+    checkSgBurned :: Integer -> PaymentPubKeyHash -> Bool
     checkSgBurned price owner =
       let tn = mkTokenName $ NftId (ld'underlyingTn inDatum) price owner
        in valueOf (txInfoMint info) (ld'sgNft inDatum) tn == (-1)

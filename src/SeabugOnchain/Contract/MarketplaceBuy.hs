@@ -13,7 +13,6 @@ import Plutus.Contract qualified as Contract
 import Plutus.V1.Ledger.Ada (getLovelace, lovelaceValueOf, toValue)
 import Plutus.V1.Ledger.Api (Redeemer (Redeemer), toBuiltinData)
 import Plutus.V1.Ledger.Value (assetClass, singleton, valueOf)
-import PlutusTx.Numeric.Extra (addExtend)
 import Text.Printf (printf)
 
 import SeabugOnchain.Contract.Aux
@@ -37,13 +36,13 @@ marketplaceBuy nftData = do
       oldNftValue = singleton curr oldName (-1)
       newNftValue = singleton curr newName 1
       mintRedeemer = Redeemer . toBuiltinData $ ChangeOwner nft pkh
-      getShare share = (addExtend nftPrice * share) `divide` 10000
-      authorShare = getShare (addExtend . nftCollection'authorShare . nftData'nftCollection $ nftData)
-      daoShare = getShare (addExtend . nftCollection'daoShare . nftData'nftCollection $ nftData)
+      getShare share = (nftPrice * share) `divide` 10000
+      authorShare = getShare (nftCollection'authorShare . nftData'nftCollection $ nftData)
+      daoShare = getShare (nftCollection'daoShare . nftData'nftCollection $ nftData)
       shareToSubtract v
         | v < getLovelace minAdaTxOut = 0
         | otherwise = v
-      ownerShare = addExtend nftPrice - shareToSubtract authorShare - shareToSubtract daoShare
+      ownerShare = nftPrice - shareToSubtract authorShare - shareToSubtract daoShare
       datum = Datum . toBuiltinData $ (curr, oldName)
       filterLowValue v t
         | v < getLovelace minAdaTxOut = mempty

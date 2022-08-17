@@ -33,11 +33,9 @@ common common-imports
     , plutus-chain-index-core
     , plutus-contract
     , plutus-core
-    , plutus-extra
     , plutus-ledger
     , plutus-ledger-api
     , plutus-ledger-constraints
-    , plutus-numeric
     , plutus-pab
     , plutus-tx
     , plutus-tx-plugin
@@ -91,8 +89,10 @@ common common-configs
 
 common common-ghc-options
   ghc-options:
+    -Wall -Wcompat -Wincomplete-record-updates
+    -Wincomplete-uni-patterns -Wredundant-constraints -fobject-code
     -fno-ignore-interface-pragmas -fno-omit-interface-pragmas
-    -fno-specialize -fno-strictness -fno-warn-orphans -fobject-code
+    -Wmissing-export-lists -Wmissing-deriving-strategies -Werror
     -fplugin-opt PlutusTx.Plugin:defer-errors
 
 library
@@ -158,6 +158,7 @@ test-suite seabug-onchain-tests
     , lens
     , mtl
     , playground-common
+    , plutip
     , plutus-contract
     , plutus-core
     , plutus-ledger
@@ -176,31 +177,29 @@ test-suite seabug-onchain-tests
     , tasty
     , tasty-expected-failure
     , tasty-hunit
-    , tasty-plutus
     , tasty-quickcheck
     , text
 
   -- , plutus-simple-model
   -- , plutip
   other-modules:
-    Test.Script.FeeWithdraw
-    Test.Script.TokenBurn
-    Test.Script.TokenChangeOwner
-    Test.Script.TokenChangePrice
-    Test.Script.TokenMarketplaceBuy
-    Test.Script.TokenMarketplaceRedeem
-    Test.Script.TokenMarketplaceSetPrice
-    Test.Script.TokenMint
-    Test.Script.TokenRestake
-    Test.Script.TokenUnstake
-    Test.Script.Values
-    Test.Size
+    -- Test.Script.FeeWithdraw
+    -- Test.Script.TokenBurn
+    -- Test.Script.TokenChangeOwner
+    -- Test.Script.TokenChangePrice
+    -- Test.Script.TokenMarketplaceBuy
+    -- Test.Script.TokenMarketplaceRedeem
+    -- Test.Script.TokenMarketplaceSetPrice
+    -- Test.Script.TokenMint
+    -- Test.Script.TokenRestake
+    -- Test.Script.TokenUnstake
+    -- Test.Script.Values
+    -- Test.Size
     Test.Trace
     Test.Utils
-
-  -- Test.Resources
-  -- Test.Quickcheck
-  -- Test.Plutip
+    -- Test.Resources
+    Test.Quickcheck
+    Test.Plutip
   default-extensions:
     OverloadedStrings
     QuasiQuotes
