@@ -183,23 +183,24 @@ test-suite seabug-onchain-tests
   -- , plutus-simple-model
   -- , plutip
   other-modules:
-    -- Test.Script.FeeWithdraw
-    -- Test.Script.TokenBurn
-    -- Test.Script.TokenChangeOwner
-    -- Test.Script.TokenChangePrice
-    -- Test.Script.TokenMarketplaceBuy
-    -- Test.Script.TokenMarketplaceRedeem
-    -- Test.Script.TokenMarketplaceSetPrice
-    -- Test.Script.TokenMint
-    -- Test.Script.TokenRestake
-    -- Test.Script.TokenUnstake
-    -- Test.Script.Values
-    -- Test.Size
+    Test.Plutip
+    Test.Quickcheck
     Test.Trace
     Test.Utils
-    -- Test.Resources
-    Test.Quickcheck
-    Test.Plutip
+
+  -- Test.Script.FeeWithdraw
+  -- Test.Script.TokenBurn
+  -- Test.Script.TokenChangeOwner
+  -- Test.Script.TokenChangePrice
+  -- Test.Script.TokenMarketplaceBuy
+  -- Test.Script.TokenMarketplaceRedeem
+  -- Test.Script.TokenMarketplaceSetPrice
+  -- Test.Script.TokenMint
+  -- Test.Script.TokenRestake
+  -- Test.Script.TokenUnstake
+  -- Test.Script.Values
+  -- Test.Size
+  -- Test.Resources
   default-extensions:
     OverloadedStrings
     QuasiQuotes
