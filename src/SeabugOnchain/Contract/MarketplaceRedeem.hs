@@ -17,14 +17,14 @@ import Text.Printf (printf)
 
 import SeabugOnchain.Contract.Aux (getAddrUtxos, getUserUtxos)
 import SeabugOnchain.Marketplace
-import SeabugOnchain.Token (mkTokenName, policy)
+import SeabugOnchain.Token (mkTokenName, policyData)
 import SeabugOnchain.Types
 
 -- | Redeem nft from the marketplace. To redeem nft it must be reminted so price is increased by 1 lovelace
 marketplaceRedeem :: NftData -> UserContract NftData
 marketplaceRedeem nftData = do
   let collection = nftData'nftCollection nftData
-      policy' = policy collection
+      policy' = policyData collection
       curr = scriptCurrencySymbol policy'
       valHash = validatorHash marketplaceValidator
       scriptAddr = scriptHashAddress valHash

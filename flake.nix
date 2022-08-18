@@ -86,11 +86,6 @@
         "github:t4ccer/plutus-apps/82c0725c4d05398ae76d71927cc60aa23db1a11d";
       flake = false;
     };
-    plutus-extra = {
-      url =
-        "github:Liqwid-Labs/plutus-extra/4722305495c8c4b03ff06debf0f4a041768a5467";
-      flake = false;
-    };
     purescript-bridge = {
       url =
         "github:input-output-hk/purescript-bridge/47a1f11825a0f9445e0f98792f79172efef66c00";
@@ -107,7 +102,10 @@
       flake = false;
     };
     bot-plutus-interface = {
-      url = "github:mlabs-haskell/bot-plutus-interface/bdb6f74b2616b637fcba633b46e2f75f68fc7a11";
+      url = "github:mlabs-haskell/bot-plutus-interface/ea23586df347d60533384351374fde2605e694cf";
+    };
+    plutip = {
+      url = "github:mlabs-haskell/plutip/5f95804b6cccaa9e0421619a4454ca9462f2de96";
     };
   };
 
@@ -317,21 +315,6 @@
           ];
         }
         {
-          src = inputs.plutus-extra;
-          subdirs = [
-            "plutus-extra"
-            "tasty-plutus"
-            "plutus-pretty"
-            "plutus-numeric"
-            "plutus-golden"
-            "plutus-laws"
-            "plutus-list"
-            # "plutus-size-check"
-            "quickcheck-plutus-instances"
-            "plutus-deriving"
-          ];
-        }
-        {
           src = inputs.purescript-bridge;
           subdirs = [ "." ];
         }
@@ -347,6 +330,10 @@
           src = inputs.bot-plutus-interface;
           subdirs = [ "." ];
         }
+        {
+          src = inputs.plutip;
+          subdirs = [ "." ];
+        }
       ];
 
       projectFor = system:
@@ -360,9 +347,13 @@
           name = "seabug-onchain";
           compiler-nix-name = "ghc8107";
           shell = {
-            additional = ps: [
-              ps.plutus-pab
-            ];
+            additional = ps:
+              with ps; [
+                plutus-pab
+                bot-plutus-interface
+                plutus-use-cases
+                plutip
+              ];
             withHoogle = true;
             tools.haskell-language-server = { };
             exactDeps = true;

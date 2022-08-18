@@ -38,16 +38,15 @@ import PlutusTx.Builtins (blake2b_256, matchData', matchList)
 import PlutusTx.Builtins.Internal (BuiltinByteString (BuiltinByteString), equalsInteger, ifThenElse, mkCons, mkConstr, mkNilData, unitval, unsafeDataAsConstr)
 import PlutusTx.Builtins.Internal qualified as Internal
 import PlutusTx.ErrorCodes (reconstructCaseError)
-import PlutusTx.Natural (Natural)
 import Schema (ToSchema)
 
 -- | Parameters that need to be submitted when minting a new NFT.
 data MintParams = MintParams
   { -- | Shares retained by author.
-    mp'authorShare :: Natural
-  , mp'daoShare :: Natural
+    mp'authorShare :: Integer
+  , mp'daoShare :: Integer
   , -- | Listing price of the NFT, in Lovelace.
-    mp'price :: Natural
+    mp'price :: Integer
   , mp'lockLockup :: Integer
   , mp'lockLockupEnd :: Slot
   , mp'fakeAuthor :: Maybe PaymentPubKeyHash
@@ -60,7 +59,7 @@ data MintParams = MintParams
 
 data NftId = NftId
   { nftId'collectionNftTn :: TokenName
-  , nftId'price :: Natural
+  , nftId'price :: Integer
   , nftId'owner :: PaymentPubKeyHash
   }
   deriving stock (Hask.Show, Generic, Hask.Eq, Hask.Ord)
@@ -144,9 +143,9 @@ data NftCollection = NftCollection
   , nftCollection'lockLockupEnd :: Slot
   , nftCollection'lockingScript :: ValidatorHash
   , nftCollection'author :: PaymentPubKeyHash
-  , nftCollection'authorShare :: Natural
+  , nftCollection'authorShare :: Integer
   , nftCollection'daoScript :: ValidatorHash
-  , nftCollection'daoShare :: Natural
+  , nftCollection'daoShare :: Integer
   }
   deriving stock (Hask.Show, Generic, Hask.Eq, Hask.Ord)
   deriving anyclass (FromJSON, ToJSON, ToSchema)
@@ -162,7 +161,7 @@ data SetPriceParams = SetPriceParams
   { -- | Token which price is set.
     sp'nftData :: NftData
   , -- | New price, in Lovelace.
-    sp'price :: Natural
+    sp'price :: Integer
   }
   deriving stock (Hask.Show, Generic, Hask.Eq)
   deriving anyclass (FromJSON, ToJSON, ToSchema)
@@ -178,7 +177,7 @@ data ChangeOwnerParams = ChangeOwnerParams
 
 data MintAct
   = MintToken NftId
-  | ChangePrice NftId Natural
+  | ChangePrice NftId Integer
   | ChangeOwner NftId PaymentPubKeyHash
   | BurnToken NftId
   deriving stock (Hask.Show)
@@ -343,8 +342,8 @@ instance PlutusTx.UnsafeFromData MintAct where
           unitval
 
 data LockAct
-  = Unstake PaymentPubKeyHash Natural
-  | Restake PaymentPubKeyHash Natural
+  = Unstake PaymentPubKeyHash Integer
+  | Restake PaymentPubKeyHash Integer
   deriving stock (Hask.Show)
 
 instance PlutusTx.ToData LockAct where
@@ -525,9 +524,9 @@ instance Hashable BuiltinByteString where
   {-# INLINEABLE hash #-}
   hash = blake2b_256
 
-instance Hashable Natural where
+instance Hashable Integer where
   {-# INLINEABLE hash #-}
-  hash = hash . toBin . fromEnum
+  hash = hash . toBin
     where
       {-# INLINEABLE toBin #-}
       toBin :: Integer -> BuiltinByteString
@@ -574,11 +573,11 @@ data SeabugMetadata = SeabugMetadata
   , sm'collectionNftTN :: TokenName
   , sm'lockingScript :: ValidatorHash
   , sm'authorPkh :: PubKeyHash
-  , sm'authorShare :: Natural
+  , sm'authorShare :: Integer
   , sm'marketplaceScript :: ValidatorHash
-  , sm'marketplaceShare :: Natural
+  , sm'marketplaceShare :: Integer
   , sm'ownerPkh :: PubKeyHash
-  , sm'ownerPrice :: Natural
+  , sm'ownerPrice :: Integer
   }
 
 instance ToJSON SeabugMetadata where

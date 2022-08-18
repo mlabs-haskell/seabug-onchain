@@ -197,10 +197,10 @@ main = do
           , pcPort = 3003
           , pcLogLevel = Debug
           , pcOwnPubKeyHash = fromString phk -- OWN_PUB_KEY
+          , pcOwnStakePubKeyHash = Nothing
           , pcSlotConfig = def
           , pcEnableTxEndpoint = True
           , pcTipPollingInterval = 1_000_000
-          , pcMetadataDir = "pab/metadata"
           , pcForceBudget = pure (10000000000, 16000000)
           }
   runPAB @NftContracts pabConf

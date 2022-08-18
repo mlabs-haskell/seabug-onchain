@@ -16,13 +16,13 @@ import Text.Printf (printf)
 
 import SeabugOnchain.Contract.Aux
 import SeabugOnchain.Marketplace
-import SeabugOnchain.Token (mkTokenName, policy)
+import SeabugOnchain.Token (mkTokenName, policyData)
 import SeabugOnchain.Types
 
 -- | Deposit nft in the marketplace
 marketplaceDeposit :: NftData -> UserContract NftData
 marketplaceDeposit nftData = do
-  let policy' = policy . nftData'nftCollection $ nftData
+  let policy' = policyData . nftData'nftCollection $ nftData
       curr = scriptCurrencySymbol policy'
       tn = mkTokenName . nftData'nftId $ nftData
       nftValue = singleton curr tn 1

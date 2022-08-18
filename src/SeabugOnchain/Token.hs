@@ -40,7 +40,6 @@ import Ledger.Value qualified as Value
 import Plutus.V1.Ledger.Scripts qualified as Plutus
 import PlutusTx qualified
 import PlutusTx.AssocMap qualified as Map
-import PlutusTx.Natural (Natural)
 import PlutusTx.Prelude
 import SeabugOnchain.Types (
   MintAct (..),
@@ -79,9 +78,9 @@ mkPolicy ::
   CurrencySymbol ->
   ValidatorHash ->
   PaymentPubKeyHash ->
-  Natural ->
+  Integer ->
   ValidatorHash ->
-  Natural ->
+  Integer ->
   MintAct ->
   ScriptContext ->
   Bool
@@ -124,7 +123,7 @@ mkPolicy collectionNftCs lockingScript author authorShare daoScript daoShare min
             _ -> False
 
     -- Check if the old token is burnt and new is minted with correct name
-    checkMintAndBurn :: NftId -> Natural -> PaymentPubKeyHash -> Bool
+    checkMintAndBurn :: NftId -> Integer -> PaymentPubKeyHash -> Bool
     checkMintAndBurn nft newPrice newOwner =
       let minted = Map.toList <$> (Map.lookup ownCs . Value.getValue . txInfoMint $ info)
           oldName = mkTokenName nft
@@ -206,9 +205,9 @@ compiledPolicy ::
     ( CurrencySymbol ->
       ValidatorHash ->
       PaymentPubKeyHash ->
-      Natural ->
+      Integer ->
       ValidatorHash ->
-      Natural ->
+      Integer ->
       WrappedMintingPolicyType
     )
 compiledPolicy = $$(PlutusTx.compile [||\a b c d e f -> wrapMintingPolicy (mkPolicy a b c d e f)||])
