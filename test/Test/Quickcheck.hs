@@ -109,7 +109,8 @@ instance ContractModel NftModel where
   instanceWallet (UserKey w) = w
 
   initialInstances = Hask.fmap (\w -> StartContract (UserKey w) ()) (wallets <> feeValultKeys)
-    -- [StartContract (UserKey w1) ()]
+
+  -- [StartContract (UserKey w1) ()]
 
   instanceContract _ UserKey {} _ = endpoints
 
@@ -246,7 +247,7 @@ instance ContractModel NftModel where
   nextState ActionMarketplaceRedeem {..} = do
     let wal = aMockInfo ^. mock'owner
         curr = getCurr aNftData
-        newPrice = (nftId'price oldNft) + 1
+        newPrice = nftId'price oldNft + 1
         oldNft = nftData'nftId aNftData
         newNft = oldNft {nftId'price = newPrice}
         collection = nftData'nftCollection aNftData
@@ -267,8 +268,8 @@ instance ContractModel NftModel where
         newInfo = mock'owner .~ aNewOwner $ aMockInfo
         nftPrice = nftId'price oldNft
         getShare share = (nftPrice * share) `divide` 100_00
-        authorShare = getShare (nftCollection'authorShare $ collection)
-        daoShare = getShare (nftCollection'daoShare $ collection)
+        authorShare = getShare (nftCollection'authorShare collection)
+        daoShare = getShare (nftCollection'daoShare collection)
         ownerShare = lovelaceValueOf (nftPrice - filterLow authorShare - filterLow daoShare)
         filterLow v
           | v < getLovelace minAdaTxOut = 0

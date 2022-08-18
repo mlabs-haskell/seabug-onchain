@@ -2,7 +2,6 @@
 
 module Test.Plutip (test) where
 
-import Prelude
 import Control.Monad.Reader (ReaderT, liftIO)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Monoid (Last)
@@ -10,10 +9,11 @@ import Data.Text (Text)
 import Ledger (PaymentPubKeyHash (unPaymentPubKeyHash), Value)
 import Plutus.Contract (waitNSlots)
 import Test.Plutip.Contract (assertExecution, initAda, withContractAs)
-import Test.Plutip.Predicate (shouldFail, shouldSucceed)
 import Test.Plutip.Internal.Types (ClusterEnv, ExecutionResult (ExecutionResult))
 import Test.Plutip.LocalCluster (BpiWallet, withCluster)
+import Test.Plutip.Predicate (shouldFail, shouldSucceed)
 import Test.Tasty (TestTree)
+import Prelude
 
 import Control.Monad (void)
 import SeabugOnchain.Contract.Burn (burn)
@@ -61,22 +61,23 @@ testValid = do
   liftIO $ print res
   (Right ((nft3, pkhs), _)) <- pure res
 
-  void $ withContractAs 1 $
-    const $ do
-      nft4 <- marketplaceBuy nft3
-      void $ waitNSlots 1
+  void $
+    withContractAs 1 $
+      const $ do
+        nft4 <- marketplaceBuy nft3
+        void $ waitNSlots 1
 
-      nft5 <- marketplaceSetPrice (SetPriceParams nft4 25_000_000)
-      void $ waitNSlots 1
+        nft5 <- marketplaceSetPrice (SetPriceParams nft4 25_000_000)
+        void $ waitNSlots 1
 
-      nft6 <- marketplaceRedeem nft5
-      void $ waitNSlots 1
+        nft6 <- marketplaceRedeem nft5
+        void $ waitNSlots 1
 
-      nft7 <- setPrice (SetPriceParams nft6 20_000_000)
-      void $ waitNSlots 1
+        nft7 <- setPrice (SetPriceParams nft6 20_000_000)
+        void $ waitNSlots 1
 
-      burn nft7
-      void $ waitNSlots 1
+        burn nft7
+        void $ waitNSlots 1
 
   withContractAs 2 $
     const $ do
