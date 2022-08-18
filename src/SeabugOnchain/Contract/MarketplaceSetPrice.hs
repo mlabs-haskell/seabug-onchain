@@ -23,7 +23,7 @@ import SeabugOnchain.Types
 marketplaceSetPrice :: SetPriceParams -> UserContract NftData
 marketplaceSetPrice sp = do
   let collection = nftData'nftCollection . sp'nftData $ sp
-      policy' = policy collection
+      policy' = policyData collection
       curr = scriptCurrencySymbol policy'
       valHash = validatorHash marketplaceValidator
       scriptAddr = scriptHashAddress valHash

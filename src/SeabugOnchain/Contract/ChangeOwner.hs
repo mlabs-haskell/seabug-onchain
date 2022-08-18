@@ -22,7 +22,7 @@ changeOwner :: ChangeOwnerParams -> UserContract ()
 changeOwner cp = do
   utxos <- getUserUtxos
   let collection = nftData'nftCollection . cp'nftData $ cp
-      policy' = policy collection
+      policy' = policyData collection
       curr = scriptCurrencySymbol policy'
       oldNft = nftData'nftId . cp'nftData $ cp
       newNft = oldNft {nftId'owner = cp'owner cp}

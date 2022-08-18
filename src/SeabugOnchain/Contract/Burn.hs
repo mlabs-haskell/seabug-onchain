@@ -28,7 +28,7 @@ import Text.Printf (printf)
 
 import SeabugOnchain.Contract.Aux (getAddrUtxos, getUserUtxos)
 import SeabugOnchain.Lock (lockValidator)
-import SeabugOnchain.Token (mkTokenName, policy)
+import SeabugOnchain.Token (mkTokenName, policyData)
 import SeabugOnchain.Types
 
 burn :: NftData -> UserContract ()
@@ -36,7 +36,7 @@ burn nftData = do
   pkh <- Contract.ownPaymentPubKeyHash
   currSlot <- Contract.currentSlot
   let collection = nftData'nftCollection nftData
-      policy' = policy collection
+      policy' = policyData collection
       curr = scriptCurrencySymbol policy'
       lockValidator' =
         lockValidator

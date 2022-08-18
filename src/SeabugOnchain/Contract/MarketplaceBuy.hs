@@ -23,7 +23,7 @@ import SeabugOnchain.Types
 marketplaceBuy :: NftData -> UserContract NftData
 marketplaceBuy nftData = do
   pkh <- Contract.ownPaymentPubKeyHash
-  let policy' = policy . nftData'nftCollection $ nftData
+  let policy' = policyData . nftData'nftCollection $ nftData
       nft = nftData'nftId nftData
       curr = scriptCurrencySymbol policy'
       scriptAddr = scriptAddress . validatorScript $ marketplaceValidator

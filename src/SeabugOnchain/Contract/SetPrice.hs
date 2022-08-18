@@ -22,7 +22,7 @@ setPrice sp = do
   pkh <- Contract.ownPaymentPubKeyHash
   utxos <- getUserUtxos
   let collection = nftData'nftCollection . sp'nftData $ sp
-      policy' = policy collection
+      policy' = policyData collection
       curr = scriptCurrencySymbol policy'
       oldNft = nftData'nftId . sp'nftData $ sp
       newNft = oldNft {nftId'price = sp'price sp}

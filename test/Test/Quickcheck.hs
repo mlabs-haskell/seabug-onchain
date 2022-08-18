@@ -44,7 +44,7 @@ import Prelude qualified as Hask
 import SeabugOnchain.Api (endpoints)
 import SeabugOnchain.Dao (daoValidator)
 import SeabugOnchain.Lock (lockValidator)
-import SeabugOnchain.Token (mkTokenName, policy)
+import SeabugOnchain.Token (mkTokenName, policyData)
 import SeabugOnchain.Types
 
 data MockInfo = MockInfo
@@ -108,7 +108,8 @@ instance ContractModel NftModel where
   -- initialHandleSpecs = Hask.fmap (\w -> ContractInstanceSpec (UserKey w) w endpoints) (wallets <> feeValultKeys)
   instanceWallet (UserKey w) = w
 
-  initialInstances = [StartContract (UserKey w1) ()]
+  initialInstances = Hask.fmap (\w -> StartContract (UserKey w) ()) (wallets <> feeValultKeys)
+    -- [StartContract (UserKey w1) ()]
 
   instanceContract _ UserKey {} _ = endpoints
 
@@ -173,7 +174,7 @@ instance ContractModel NftModel where
 
   perform h _ _ ActionMint {..} = do
     let params = MintParams aAuthorShare aDaoShare aPrice 5 5 Nothing feeValultKeys' Nothing "V1"
-    callEndpoint @"mint-with-collection" (h $ UserKey aAuthor) (aCollection, params)
+    callEndpoint @"mint-with-collection" (h $ UserKey aAuthor) (aCollection, params) -- This shouldn't put the nft up on the marketplace
     void $ Trace.waitNSlots 5
   perform h _ _ ActionSetPrice {..} = do
     let params = SetPriceParams aNftData aPrice
@@ -291,7 +292,7 @@ deriving stock instance Hask.Show (ContractInstanceKey NftModel w s e p)
 
 getCurr :: NftData -> CurrencySymbol
 getCurr nft =
-  let policy' = policy . nftData'nftCollection $ nft
+  let policy' = policyData . nftData'nftCollection $ nft
    in scriptCurrencySymbol policy'
 
 hardcodedCollections :: [AssetClass]
