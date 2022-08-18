@@ -69,15 +69,15 @@ instance ContractModel NftModel where
   data Action NftModel
     = ActionMint
         { aAuthor :: Wallet
-        , aPrice :: Integer
-        , aAuthorShare :: Integer
-        , aDaoShare :: Integer
+        , aPrice :: Natural
+        , aAuthorShare :: Natural
+        , aDaoShare :: Natural
         , aCollection :: AssetClass
         }
     | ActionSetPrice
         { aNftData :: NftData
         , aMockInfo :: MockInfo
-        , aPrice :: Integer
+        , aPrice :: Natural
         }
     | ActionMarketplaceDeposit
         { aNftData :: NftData
@@ -90,7 +90,7 @@ instance ContractModel NftModel where
     | ActionMarketplaceSetPrice
         { aNftData :: NftData
         , aMockInfo :: MockInfo
-        , aPrice :: Integer
+        , aPrice :: Natural
         }
     | ActionMarketplaceBuy
         { aNftData :: NftData
@@ -105,12 +105,9 @@ instance ContractModel NftModel where
   data ContractInstanceKey NftModel w s e p where
     UserKey :: Wallet -> ContractInstanceKey NftModel (Last NftData) NFTAppSchema Text ()
 
-  -- initialHandleSpecs = Hask.fmap (\w -> ContractInstanceSpec (UserKey w) w endpoints) (wallets <> feeValultKeys)
   instanceWallet (UserKey w) = w
 
   initialInstances = Hask.fmap (\w -> StartContract (UserKey w) ()) (wallets <> feeValultKeys)
-
-  -- [StartContract (UserKey w1) ()]
 
   instanceContract _ UserKey {} _ = endpoints
 
@@ -118,8 +115,8 @@ instance ContractModel NftModel where
 
   arbitraryAction model =
     let genWallet = QC.elements wallets
-        genNonNeg = (* 1_000_000) . (+ 25) . QC.getNonNegative <$> QC.arbitrary
-        genShare = QC.elements [0 .. 4500]
+        genNonNeg = Natural . (* 1_000_000) . (+ 25) . QC.getNonNegative <$> QC.arbitrary
+        genShare = Natural <$> QC.elements [0 .. 4500]
         genNftId = QC.elements $ addNonExistingNFT $ Map.toList (model ^. contractState . mNfts)
         genMarketplaceNftId = QC.elements $ addNonExistingNFT $ Map.toList (model ^. contractState . mMarketplace)
         genCollection = QC.elements hardcodedCollections
@@ -266,10 +263,10 @@ instance ContractModel NftModel where
         newNft = oldNft {nftId'owner = mockWalletPaymentPubKeyHash aNewOwner}
         collection = nftData'nftCollection aNftData
         newInfo = mock'owner .~ aNewOwner $ aMockInfo
-        nftPrice = nftId'price oldNft
+        nftPrice = fromEnum $ nftId'price oldNft
         getShare share = (nftPrice * share) `divide` 100_00
-        authorShare = getShare (nftCollection'authorShare collection)
-        daoShare = getShare (nftCollection'daoShare collection)
+        authorShare = getShare (fromEnum $ nftCollection'authorShare collection)
+        daoShare = getShare (fromEnum $ nftCollection'daoShare collection)
         ownerShare = lovelaceValueOf (nftPrice - filterLow authorShare - filterLow daoShare)
         filterLow v
           | v < getLovelace minAdaTxOut = 0
