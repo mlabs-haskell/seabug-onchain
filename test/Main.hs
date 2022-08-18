@@ -6,7 +6,7 @@ import Prelude (IO)
 -- import Plutus.Test.Model (readDefaultBchConfig)
 import Test.Tasty (defaultMain, testGroup)
 
-import Test.Plutip qualified as Plutip
+-- import Test.Plutip qualified as Plutip
 import Test.Quickcheck qualified as Quickcheck
 -- import Test.Resources qualified as Resources
 -- import Test.Script.FeeWithdraw qualified as FeeWithdraw
@@ -49,5 +49,5 @@ main = do
       --     ]
       -- , FeeWithdraw.test
       [ Quickcheck.test
-      , Plutip.test
+      -- , Plutip.test
       ]
