@@ -347,7 +347,7 @@
           name = "seabug-onchain";
           compiler-nix-name = "ghc8107";
           shell = {
-            additional = ps: 
+            additional = ps:
               with ps; [
                 plutus-pab
                 bot-plutus-interface
