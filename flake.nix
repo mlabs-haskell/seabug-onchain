@@ -2,114 +2,19 @@
   description = "seabug-onchain";
 
   inputs = {
-    haskell-nix.url = "github:mlabs-haskell/haskell.nix";
-
-    nixpkgs.follows = "haskell-nix/nixpkgs-unstable";
-
-    iohk-nix.url = "github:input-output-hk/iohk-nix";
-    iohk-nix.flake = false; # Bad Nix code
+    haskell-nix.follows = "plutip/bot-plutus-interface/haskell-nix";
+    nixpkgs.follows = "plutip/bot-plutus-interface/haskell-nix/nixpkgs";
+    iohk-nix.follows = "plutip/bot-plutus-interface/iohk-nix";
 
     flake-compat = {
       url = "github:edolstra/flake-compat";
       flake = false;
     };
-
-    # all inputs below here are for pinning with haskell.nix
-    cardano-addresses = {
-      url =
-        "github:input-output-hk/cardano-addresses/71006f9eb956b0004022e80aadd4ad50d837b621";
-      flake = false;
-    };
-    cardano-base = {
-      url =
-        "github:input-output-hk/cardano-base/41545ba3ac6b3095966316a99883d678b5ab8da8";
-      flake = false;
-    };
-    cardano-crypto = {
-      url =
-        "github:input-output-hk/cardano-crypto/f73079303f663e028288f9f4a9e08bcca39a923e";
-      flake = false;
-    };
-    cardano-ledger = {
-      url =
-        "github:input-output-hk/cardano-ledger/1a9ec4ae9e0b09d54e49b2a40c4ead37edadcce5";
-      flake = false;
-    };
-    cardano-node = {
-      url =
-        "github:input-output-hk/cardano-node/814df2c146f5d56f8c35a681fe75e85b905aed5d";
-      flake = false;
-    };
-    cardano-prelude = {
-      url =
-        "github:input-output-hk/cardano-prelude/bb4ed71ba8e587f672d06edf9d2e376f4b055555";
-      flake = false;
-    };
-    cardano-wallet = {
-      url =
-        "github:input-output-hk/cardano-wallet/a5085acbd2670c24251cf8d76a4e83c77a2679ba";
-      flake = false;
-    };
-    # We don't actually need this. Removing this might make caching worse?
-    flat = {
-      url =
-        "github:input-output-hk/flat/ee59880f47ab835dbd73bea0847dab7869fc20d8";
-      flake = false;
-    };
-    goblins = {
-      url =
-        "github:input-output-hk/goblins/cde90a2b27f79187ca8310b6549331e59595e7ba";
-      flake = false;
-    };
-    iohk-monitoring-framework = {
-      url =
-        "github:input-output-hk/iohk-monitoring-framework/46f994e216a1f8b36fe4669b47b2a7011b0e153c";
-      flake = false;
-    };
-    optparse-applicative = {
-      url =
-        "github:input-output-hk/optparse-applicative/7497a29cb998721a9068d5725d49461f2bba0e7a";
-      flake = false;
-    };
-    ouroboros-network = {
-      url =
-        "github:input-output-hk/ouroboros-network/d2d219a86cda42787325bb8c20539a75c2667132";
-      flake = false;
-    };
-    plutus = {
-      url =
-        "github:input-output-hk/plutus/1a3c3a761cf048371c52a34b004f8b3fcf0dab43";
-      flake = false;
-    };
-    plutus-apps = {
-      url =
-        "github:t4ccer/plutus-apps/82c0725c4d05398ae76d71927cc60aa23db1a11d";
-      flake = false;
-    };
-    purescript-bridge = {
-      url =
-        "github:input-output-hk/purescript-bridge/47a1f11825a0f9445e0f98792f79172efef66c00";
-      flake = false;
-    };
-    servant-purescript = {
-      url =
-        "github:input-output-hk/servant-purescript/44e7cacf109f84984cd99cd3faf185d161826963";
-      flake = false;
-    };
-    Win32-network = {
-      url =
-        "github:input-output-hk/Win32-network/3825d3abf75f83f406c1f7161883c438dac7277d";
-      flake = false;
-    };
-    bot-plutus-interface = {
-      url = "github:mlabs-haskell/bot-plutus-interface/ea23586df347d60533384351374fde2605e694cf";
-    };
-    plutip = {
-      url = "github:mlabs-haskell/plutip/5f95804b6cccaa9e0421619a4454ca9462f2de96";
-    };
+    plutip.url =
+      "github:mlabs-haskell/plutip?rev=1ee56e97d3c00bf125b5c4657ef9345a14b8dfc7";
   };
 
-  outputs = { self, nixpkgs, haskell-nix, iohk-nix, ... }@inputs:
+  outputs = { self, plutip, nixpkgs, haskell-nix, iohk-nix, ... }@inputs:
     let
       defaultSystems = [ "x86_64-linux" "x86_64-darwin" ];
 
@@ -123,228 +28,21 @@
         };
       nixpkgsFor' = system: import nixpkgs { inherit system; };
 
-      cabalProjectLocal = ''
-        allow-newer:
-          -- Pins to an old version of Template Haskell, unclear if/when it will be updated
-          size-based:template-haskell
-          , ouroboros-consensus-byron:formatting
-          , beam-core:aeson
-          , beam-sqlite:aeson
-          , beam-sqlite:dlist
-          , beam-migrate:aeson
+      haskellModules = inputs.plutip.haskellModules;
 
-        constraints:
-          -- big breaking change here, inline-r doens't have an upper bound
-          singletons < 3.0
-          -- bizarre issue: in earlier versions they define their own 'GEq', in newer
-          -- ones they reuse the one from 'some', but there isn't e.g. a proper version
-          -- constraint from dependent-sum-template (which is the library we actually use).
-          , dependent-sum > 0.6.2.0
-          -- Newer Hashable have instances for Set, which breaks beam-migrate
-          -- which declares its own instances of Hashable Set
-          , hashable < 1.3.4.0
-      '';
-
-      haskellModules = [
-        ({ pkgs, ... }:
-          {
-            packages = {
-              marlowe.flags.defer-plugin-errors = true;
-              plutus-use-cases.flags.defer-plugin-errors = true;
-              plutus-ledger.flags.defer-plugin-errors = true;
-              plutus-contract.flags.defer-plugin-errors = true;
-              cardano-crypto-praos.components.library.pkgconfig = pkgs.lib.mkForce [ [ pkgs.libsodium-vrf ] ];
-              cardano-crypto-class.components.library.pkgconfig = pkgs.lib.mkForce [ [ pkgs.libsodium-vrf ] ];
-              cardano-wallet-core.components.library.build-tools = [
-                pkgs.buildPackages.buildPackages.gitMinimal
-              ];
-              cardano-config.components.library.build-tools = [
-                pkgs.buildPackages.buildPackages.gitMinimal
-              ];
-            };
-          }
-        )
-      ];
-
-      extraSources = [
-        {
-          src = inputs.cardano-addresses;
-          subdirs = [ "core" "command-line" ];
-        }
-        {
-          src = inputs.cardano-base;
-          subdirs = [
-            "base-deriving-via"
-            "binary"
-            "binary/test"
-            "cardano-crypto-class"
-            "cardano-crypto-praos"
-            "cardano-crypto-tests"
-            "measures"
-            "orphans-deriving-via"
-            "slotting"
-            "strict-containers"
-          ];
-        }
-        {
-          src = inputs.cardano-crypto;
-          subdirs = [ "." ];
-        }
-        {
-          src = inputs.cardano-ledger;
-          subdirs = [
-            "eras/alonzo/impl"
-            "eras/byron/chain/executable-spec"
-            "eras/byron/crypto"
-            "eras/byron/crypto/test"
-            "eras/byron/ledger/executable-spec"
-            "eras/byron/ledger/impl"
-            "eras/byron/ledger/impl/test"
-            "eras/shelley/impl"
-            "eras/shelley-ma/impl"
-            "eras/shelley/test-suite"
-            "libs/cardano-data"
-            "libs/cardano-ledger-core"
-            "libs/cardano-ledger-pretty"
-            "libs/cardano-protocol-tpraos"
-            "libs/compact-map"
-            "libs/non-integral"
-            "libs/set-algebra"
-            "libs/small-steps"
-            "libs/small-steps-test"
-          ];
-        }
-        {
-          src = inputs.cardano-node;
-          subdirs = [ "cardano-api" ];
-        }
-        {
-          src = inputs.cardano-prelude;
-          subdirs = [ "cardano-prelude" "cardano-prelude-test" ];
-        }
-        {
-          src = inputs.cardano-wallet;
-          subdirs = [
-            "lib/cli"
-            "lib/core"
-            "lib/core-integration"
-            "lib/dbvar"
-            "lib/launcher"
-            "lib/numeric"
-            "lib/shelley"
-            "lib/strict-non-empty-containers"
-            "lib/test-utils"
-            "lib/text-class"
-          ];
-        }
-        {
-          src = inputs.flat;
-          subdirs = [ "." ];
-        }
-        {
-          src = inputs.goblins;
-          subdirs = [ "." ];
-        }
-        {
-          src = inputs.iohk-monitoring-framework;
-          subdirs = [
-            "iohk-monitoring"
-            "tracer-transformers"
-            "contra-tracer"
-            "plugins/backend-aggregation"
-            "plugins/backend-ekg"
-            "plugins/backend-monitoring"
-            "plugins/backend-trace-forwarder"
-            "plugins/scribe-systemd"
-          ];
-        }
-        {
-          src = inputs.optparse-applicative;
-          subdirs = [ "." ];
-        }
-        {
-          src = inputs.ouroboros-network;
-          subdirs = [
-            "io-classes"
-            "io-sim"
-            "monoidal-synchronisation"
-            "network-mux"
-            "ntp-client"
-            "ouroboros-consensus"
-            "ouroboros-consensus-byron"
-            "ouroboros-consensus-cardano"
-            "ouroboros-consensus-protocol"
-            "ouroboros-consensus-shelley"
-            "ouroboros-network"
-            "ouroboros-network-framework"
-            "ouroboros-network-testing"
-            "strict-stm"
-            "typed-protocols"
-            "typed-protocols-cborg"
-            "typed-protocols-examples"
-          ];
-        }
-        {
-          src = inputs.plutus;
-          subdirs = [
-            "plutus-core"
-            "plutus-ledger-api"
-            "plutus-tx"
-            "plutus-tx-plugin"
-            "prettyprinter-configurable"
-            "stubs/plutus-ghc-stub"
-            "word-array"
-          ];
-        }
-        {
-          src = inputs.plutus-apps;
-          subdirs = [
-            "doc"
-            "freer-extras"
-            "playground-common"
-            "plutus-chain-index"
-            "plutus-chain-index-core"
-            "plutus-contract"
-            "plutus-ledger-constraints"
-            "plutus-ledger"
-            "plutus-pab"
-            "plutus-playground-server"
-            "plutus-use-cases"
-            "quickcheck-dynamic"
-            "web-ghc"
-          ];
-        }
-        {
-          src = inputs.purescript-bridge;
-          subdirs = [ "." ];
-        }
-        {
-          src = inputs.servant-purescript;
-          subdirs = [ "." ];
-        }
-        {
-          src = inputs.Win32-network;
-          subdirs = [ "." ];
-        }
-        {
-          src = inputs.bot-plutus-interface;
-          subdirs = [ "." ];
-        }
-        {
-          src = inputs.plutip;
-          subdirs = [ "." ];
-        }
-      ];
+      extraSources = inputs.plutip.extraSources ++ [{
+        src = inputs.plutip;
+        subdirs = [ "." ];
+      }];
 
       projectFor = system:
         let
           pkgs = nixpkgsFor system;
           pkgs' = nixpkgsFor' system;
         in
-        pkgs.haskell-nix.cabalProject' {
-          src = ./.;
-          inherit cabalProjectLocal extraSources;
+        pkgs.haskell-nix.cabalProject {
           name = "seabug-onchain";
+          src = ./.;
           compiler-nix-name = "ghc8107";
           shell = {
             additional = ps:
@@ -354,7 +52,7 @@
                 plutus-use-cases
                 plutip
               ];
-            withHoogle = true;
+            withHoogle = false;
             tools.haskell-language-server = { };
             exactDeps = true;
             nativeBuildInputs = with pkgs'; [
@@ -369,6 +67,8 @@
               nixpkgs-fmt
             ];
           };
+          inherit (plutip) cabalProjectLocal;
+          inherit extraSources;
           modules = haskellModules;
         };
 
@@ -389,7 +89,8 @@
 
     in
     {
-      inherit cabalProjectLocal extraSources haskellModules;
+      inherit extraSources haskellModules;
+      inherit (plutip) cabalProjectLocal;
 
       project = perSystem projectFor;
       flake = perSystem (system: (projectFor system).flake { });
