@@ -5,12 +5,11 @@ import Prelude qualified as Hask
 
 import Control.Monad (void)
 import Data.Map qualified as Map
-import Ledger (ChainIndexTxOut (_ciTxOutValue), Redeemer (Redeemer), minAdaTxOut, scriptHashAddress)
+import Ledger (ChainIndexTxOut (_ciTxOutValue), Redeemer (Redeemer), minAdaTxOut, scriptCurrencySymbol, scriptHashAddress)
+import Ledger.Ada (toValue)
 import Ledger.Constraints qualified as Constraints
-import Ledger.Contexts (scriptCurrencySymbol)
 import Ledger.Typed.Scripts (Any, validatorHash, validatorScript)
 import Plutus.Contract qualified as Contract
-import Plutus.V1.Ledger.Ada (toValue)
 import Plutus.V1.Ledger.Api (toBuiltinData)
 import Plutus.V1.Ledger.Value (assetClass, singleton, valueOf)
 import Text.Printf (printf)
@@ -41,13 +40,13 @@ marketplaceRedeem nftData = do
   (utxo, utxoIndex) <- case utxo' of
     Nothing -> Contract.throwError "NFT not found on marketplace"
     Just x -> Hask.pure x
-  pkh <- Contract.ownPaymentPubKeyHash
+  pkh <- Contract.ownFirstPaymentPubKeyHash
   userUtxos <- getUserUtxos
   let lookup =
         Hask.mconcat
-          [ Constraints.mintingPolicy policy'
-          , Constraints.typedValidatorLookups marketplaceValidator
-          , Constraints.otherScript (validatorScript marketplaceValidator)
+          [ Constraints.plutusV1MintingPolicy policy'
+          , Constraints.plutusV1TypedValidatorLookups marketplaceValidator
+          , Constraints.plutusV1OtherScript (validatorScript marketplaceValidator)
           , Constraints.unspentOutputs $ Map.insert utxo utxoIndex userUtxos
           , Constraints.ownPaymentPubKeyHash pkh
           ]

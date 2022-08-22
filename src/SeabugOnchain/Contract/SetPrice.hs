@@ -6,9 +6,9 @@ import Prelude qualified as Hask
 import Control.Monad (void)
 import Data.Void (Void)
 import Ledger (Redeemer (Redeemer), minAdaTxOut, scriptCurrencySymbol)
+import Ledger.Ada (toValue)
 import Ledger.Constraints qualified as Constraints
 import Plutus.Contract qualified as Contract
-import Plutus.V1.Ledger.Ada (toValue)
 import Plutus.V1.Ledger.Api (ToData (toBuiltinData))
 import Plutus.V1.Ledger.Value (assetClass, singleton)
 import Text.Printf (printf)
@@ -19,7 +19,7 @@ import SeabugOnchain.Types
 
 setPrice :: SetPriceParams -> UserContract NftData
 setPrice sp = do
-  pkh <- Contract.ownPaymentPubKeyHash
+  pkh <- Contract.ownFirstPaymentPubKeyHash
   utxos <- getUserUtxos
   let collection = nftData'nftCollection . sp'nftData $ sp
       policy' = policyData collection
@@ -34,7 +34,7 @@ setPrice sp = do
       nftData = NftData collection newNft
       lookup =
         Hask.mconcat
-          [ Constraints.mintingPolicy policy'
+          [ Constraints.plutusV1MintingPolicy policy'
           , Constraints.unspentOutputs utxos
           , Constraints.ownPaymentPubKeyHash pkh
           ]

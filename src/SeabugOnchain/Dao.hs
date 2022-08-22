@@ -1,7 +1,7 @@
 module SeabugOnchain.Dao (mkValidator, daoValidator) where
 
 import Ledger (txSignedBy)
-import Ledger.Typed.Scripts (Any, TypedValidator, unsafeMkTypedValidator, wrapValidator)
+import Ledger.Typed.Scripts (Any, TypedValidator, mkUntypedValidator, unsafeMkTypedValidator)
 import Plutus.V1.Ledger.Api (PubKeyHash, ScriptContext, mkValidatorScript, scriptContextTxInfo)
 import PlutusTx qualified
 import PlutusTx.Prelude
@@ -22,4 +22,4 @@ daoValidator pkhs = unsafeMkTypedValidator v
                                     `PlutusTx.applyCode` PlutusTx.liftCode pkhs
                                  )
         )
-    wrap = wrapValidator
+    wrap = mkUntypedValidator

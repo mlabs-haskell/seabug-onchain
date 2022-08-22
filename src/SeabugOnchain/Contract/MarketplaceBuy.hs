@@ -5,12 +5,12 @@ import Prelude qualified as Hask
 
 import Control.Monad (void)
 import Data.Map qualified as Map
-import Ledger (Datum (Datum), minAdaTxOut, scriptAddress, _ciTxOutValue)
+import Ledger (Datum (Datum), minAdaTxOut, scriptCurrencySymbol, _ciTxOutValue)
+import Ledger.Ada (getLovelace, lovelaceValueOf, toValue)
 import Ledger.Constraints qualified as Constraints
-import Ledger.Contexts (scriptCurrencySymbol)
 import Ledger.Typed.Scripts (Any, validatorHash, validatorScript)
 import Plutus.Contract qualified as Contract
-import Plutus.V1.Ledger.Ada (getLovelace, lovelaceValueOf, toValue)
+import Plutus.Script.Utils.V1.Address (mkValidatorAddress)
 import Plutus.V1.Ledger.Api (Redeemer (Redeemer), toBuiltinData)
 import Plutus.V1.Ledger.Value (assetClass, singleton, valueOf)
 import Text.Printf (printf)
@@ -22,11 +22,11 @@ import SeabugOnchain.Types
 
 marketplaceBuy :: NftData -> UserContract NftData
 marketplaceBuy nftData = do
-  pkh <- Contract.ownPaymentPubKeyHash
+  pkh <- Contract.ownFirstPaymentPubKeyHash
   let policy' = policyData . nftData'nftCollection $ nftData
       nft = nftData'nftId nftData
       curr = scriptCurrencySymbol policy'
-      scriptAddr = scriptAddress . validatorScript $ marketplaceValidator
+      scriptAddr = mkValidatorAddress . validatorScript $ marketplaceValidator
       containsNft (_, tx) = valueOf (_ciTxOutValue tx) curr oldName == 1
       valHash = validatorHash marketplaceValidator
       nftPrice = fromEnum $ nftId'price nft
@@ -55,9 +55,9 @@ marketplaceBuy nftData = do
     Just x -> Hask.pure x
   let lookup =
         Hask.mconcat
-          [ Constraints.mintingPolicy policy'
-          , Constraints.typedValidatorLookups marketplaceValidator
-          , Constraints.otherScript (validatorScript marketplaceValidator)
+          [ Constraints.plutusV1MintingPolicy policy'
+          , Constraints.plutusV1TypedValidatorLookups marketplaceValidator
+          , Constraints.plutusV1OtherScript (validatorScript marketplaceValidator)
           , Constraints.unspentOutputs $ Map.insert utxo utxoIndex userUtxos
           , Constraints.ownPaymentPubKeyHash pkh
           ]

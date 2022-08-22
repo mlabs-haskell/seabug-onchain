@@ -15,7 +15,7 @@ import SeabugOnchain.Types
 
 -- | Get the current Wallet's publick key.
 getUserAddr :: GenericContract Address
-getUserAddr = (`pubKeyHashAddress` Nothing) <$> Contract.ownPaymentPubKeyHash
+getUserAddr = (`pubKeyHashAddress` Nothing) <$> Contract.ownFirstPaymentPubKeyHash
 
 -- | Get the current wallet's utxos.
 getUserUtxos :: GenericContract (Map.Map TxOutRef ChainIndexTxOut)
@@ -23,7 +23,7 @@ getUserUtxos = getAddrUtxos =<< getUserAddr
 
 -- | Get the ChainIndexTxOut at an address.
 getAddrUtxos :: Address -> GenericContract (Map.Map TxOutRef ChainIndexTxOut)
-getAddrUtxos adr = Map.map fst <$> Contract.utxosTxOutTxAt adr
+getAddrUtxos = Contract.utxosAt
 
 -- | Get first utxo of current wallet
 getFirstUtxo :: GenericContract (TxOutRef, ChainIndexTxOut)

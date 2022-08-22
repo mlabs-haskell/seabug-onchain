@@ -7,9 +7,9 @@ import Prelude qualified as Hask
 import Control.Monad (void)
 import Data.Void (Void)
 import Ledger (Datum (Datum), Redeemer (Redeemer), scriptCurrencySymbol)
+import Ledger.Ada (lovelaceValueOf)
 import Ledger.Constraints qualified as Constraints
 import Plutus.Contract qualified as Contract
-import Plutus.V1.Ledger.Ada (lovelaceValueOf)
 import Plutus.V1.Ledger.Api (ToData (toBuiltinData))
 import Plutus.V1.Ledger.Value (assetClass, singleton)
 import Text.Printf (printf)
@@ -39,7 +39,7 @@ changeOwner cp = do
       datum = Datum . PlutusTx.toBuiltinData $ (curr, oldName)
       lookup =
         Hask.mconcat
-          [ Constraints.mintingPolicy policy'
+          [ Constraints.plutusV1MintingPolicy policy'
           , Constraints.unspentOutputs utxos
           ]
       tx =

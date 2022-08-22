@@ -32,7 +32,7 @@ import Ledger (
   unPaymentPubKeyHash,
  )
 import Ledger.TimeSlot (posixTimeToEnclosingSlot)
-import Ledger.Typed.Scripts (Any, TypedValidator, unsafeMkTypedValidator, wrapValidator)
+import Ledger.Typed.Scripts (Any, TypedValidator, mkUntypedValidator, unsafeMkTypedValidator)
 import Ledger.Value (Value (getValue), valueOf)
 import PlutusTx qualified
 import PlutusTx.AssocMap qualified as AssocMap
@@ -167,7 +167,7 @@ lockValidator underlyingCs lockup lockupEnd = unsafeMkTypedValidator v
                                     `PlutusTx.applyCode` PlutusTx.liftCode lockupEnd
                                  )
         )
-    wrap = wrapValidator @LockDatum @LockAct
+    wrap = mkUntypedValidator @LockDatum @LockAct
 
 lockScriptUntyped :: Script
 lockScriptUntyped = fromCompiledCode $$(PlutusTx.compile [||mkValidatorUntyped||])

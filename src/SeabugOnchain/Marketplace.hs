@@ -9,7 +9,7 @@ import Ledger (
   mkValidatorScript,
   scriptContextTxInfo,
  )
-import Ledger.Typed.Scripts (Any, TypedValidator, unsafeMkTypedValidator, wrapValidator)
+import Ledger.Typed.Scripts (Any, TypedValidator, mkUntypedValidator, unsafeMkTypedValidator)
 import Ledger.Value (assetClassValueOf)
 
 import SeabugOnchain.Types
@@ -32,4 +32,4 @@ marketplaceValidator = unsafeMkTypedValidator v
     v =
       mkValidatorScript
         ($$(PlutusTx.compile [||wrap||]) `PlutusTx.applyCode` $$(PlutusTx.compile [||mkValidator||]))
-    wrap = wrapValidator
+    wrap = mkUntypedValidator

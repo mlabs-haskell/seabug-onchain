@@ -14,21 +14,26 @@ import PlutusTx.Prelude (
 import Prelude qualified as Hask
 
 import Control.Monad (void)
-import Data.Aeson (toJSON)
+
+-- import Data.Aeson (toJSON)
 import Data.Default (def)
-import Data.Map qualified as Map
+
+-- import Data.Map qualified as Map
 import Data.Text (pack)
 import Data.Void (Void)
-import Ledger (Datum (Datum), MintingPolicy (getMintingPolicy), Redeemer (Redeemer), minAdaTxOut, scriptHash, unPaymentPubKeyHash)
+
+-- import Ledger (Datum (Datum), MintingPolicy (getMintingPolicy), Redeemer (Redeemer), minAdaTxOut, scriptHash, unPaymentPubKeyHash, scriptCurrencySymbol)
+import Ledger (Datum (Datum), Redeemer (Redeemer), minAdaTxOut, scriptCurrencySymbol)
 import Ledger.Constraints qualified as Constraints
-import Ledger.Constraints.Metadata (OtherFields (OtherFields), TxMetadata (TxMetadata))
-import Ledger.Contexts (scriptCurrencySymbol)
+
+-- import Ledger.Constraints.Metadata (OtherFields (OtherFields), TxMetadata (TxMetadata))
+
+import Ledger.Ada (lovelaceValueOf, toValue)
 import Ledger.TimeSlot (slotToBeginPOSIXTime)
 import Ledger.Typed.Scripts (validatorHash)
 import Plutus.Contract qualified as Contract
 import Plutus.Contracts.Currency (CurrencyError, mintContract)
 import Plutus.Contracts.Currency qualified as MC
-import Plutus.V1.Ledger.Ada (lovelaceValueOf, toValue)
 import Plutus.V1.Ledger.Api (Extended (Finite, PosInf), Interval (Interval), LowerBound (LowerBound), ToData (toBuiltinData), TokenName (TokenName), UpperBound (UpperBound))
 import Plutus.V1.Ledger.Value (AssetClass, assetClass, assetClassValue, singleton, unAssetClass)
 import Text.Printf (printf)
@@ -46,9 +51,9 @@ mint mp = do
 
 mintWithCollection :: (AssetClass, MintParams) -> UserContract NftData
 mintWithCollection (ac, mp) = do
-  pkh <- Contract.ownPaymentPubKeyHash
+  pkh <- Contract.ownFirstPaymentPubKeyHash
   utxos <- getUserUtxos
-  currSlot <- Contract.currentSlot
+  currSlot <- Contract.currentPABSlot
   Contract.logInfo @Hask.String $ printf "Curr slot: %s" (Hask.show currSlot)
   let owner = fromMaybe (pkh, Nothing) (mp'owner mp)
       now = slotToBeginPOSIXTime def currSlot
@@ -77,25 +82,25 @@ mintWithCollection (ac, mp) = do
       nftValue = singleton curr tn 1
       mintRedeemer = Redeemer . toBuiltinData . MintToken $ nft
       nftData = NftData collection nft
-      seabugMeta =
-        SeabugMetadata
-          { sm'policyId = scriptHash . getMintingPolicy $ policy'
-          , sm'mintPolicy = mp'mintPolicy mp
-          , sm'collectionNftCS = nftCollection'collectionNftCs collection
-          , sm'collectionNftTN = nftId'collectionNftTn nft
-          , sm'lockingScript = nftCollection'lockingScript collection
-          , sm'authorPkh = unPaymentPubKeyHash $ nftCollection'author collection
-          , sm'authorShare = nftCollection'authorShare collection
-          , sm'marketplaceScript = nftCollection'daoScript collection
-          , sm'marketplaceShare = nftCollection'daoShare collection
-          , sm'ownerPkh = unPaymentPubKeyHash $ nftId'owner nft
-          , sm'ownerPrice = nftId'price nft
-          }
+      -- seabugMeta =
+      --   SeabugMetadata
+      --     { sm'policyId = scriptHash . getMintingPolicy $ policy'
+      --     , sm'mintPolicy = mp'mintPolicy mp
+      --     , sm'collectionNftCS = nftCollection'collectionNftCs collection
+      --     , sm'collectionNftTN = nftId'collectionNftTn nft
+      --     , sm'lockingScript = nftCollection'lockingScript collection
+      --     , sm'authorPkh = unPaymentPubKeyHash $ nftCollection'author collection
+      --     , sm'authorShare = nftCollection'authorShare collection
+      --     , sm'marketplaceScript = nftCollection'daoScript collection
+      --     , sm'marketplaceShare = nftCollection'daoShare collection
+      --     , sm'ownerPkh = unPaymentPubKeyHash $ nftId'owner nft
+      --     , sm'ownerPrice = nftId'price nft
+      --     }
 
-      meta = TxMetadata Nothing $ OtherFields $ Map.singleton "727" $ toJSON seabugMeta
+      -- meta = TxMetadata Nothing $ OtherFields $ Map.singleton "727" $ toJSON seabugMeta
       lookup =
         Hask.mconcat
-          [ Constraints.mintingPolicy policy'
+          [ Constraints.plutusV1MintingPolicy policy'
           , Constraints.unspentOutputs utxos
           ]
       tx =
@@ -110,8 +115,8 @@ mintWithCollection (ac, mp) = do
               Interval
                 (LowerBound (Finite now) True)
                 (UpperBound PosInf False)
-          , Constraints.mustIncludeMetadata meta
-          , Constraints.mustPayWithDatumToPubKey pkh (Datum $ toBuiltinData ()) (lovelaceValueOf 5_000_000)
+          , -- , Constraints.mustIncludeMetadata meta
+            Constraints.mustPayWithDatumToPubKey pkh (Datum $ toBuiltinData ()) (lovelaceValueOf 5_000_000)
           , Constraints.mustPayWithDatumToPubKey pkh (Datum $ toBuiltinData ()) (lovelaceValueOf 5_000_000)
           , Constraints.mustPayWithDatumToPubKey pkh (Datum $ toBuiltinData ()) (lovelaceValueOf 5_000_000)
           , Constraints.mustPayWithDatumToPubKey pkh (Datum $ toBuiltinData ()) (lovelaceValueOf 5_000_000)
@@ -124,7 +129,7 @@ mintWithCollection (ac, mp) = do
 
 generateNft :: UserContract AssetClass
 generateNft = do
-  self <- Contract.ownPaymentPubKeyHash
+  self <- Contract.ownFirstPaymentPubKeyHash
   let tn = TokenName "NFT"
   x <-
     Contract.mapError

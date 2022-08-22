@@ -4,8 +4,6 @@
 
 module SeabugOnchain.Token (
   mkPolicy,
-  unappliedPolicyScript,
-  policy,
   policyDataScript,
   policyData,
   mkTokenName,
@@ -33,8 +31,7 @@ import Ledger.Ada qualified as Ada
 import Ledger.Address (
   scriptHashAddress,
  )
-import Ledger.Scripts qualified as Scripts
-import Ledger.Typed.Scripts (WrappedMintingPolicyType, wrapMintingPolicy)
+import Ledger.Typed.Scripts (mkUntypedMintingPolicy)
 import Ledger.Value (TokenName (TokenName), valueOf)
 import Ledger.Value qualified as Value
 import Plutus.V1.Ledger.Scripts qualified as Plutus
@@ -201,34 +198,8 @@ mkPolicy collectionNftCs lockingScript author authorShare daoScript daoShare min
 mkTokenName :: NftId -> TokenName
 mkTokenName = TokenName . hash
 
-compiledPolicy ::
-  PlutusTx.CompiledCode
-    ( CurrencySymbol ->
-      ValidatorHash ->
-      PaymentPubKeyHash ->
-      Natural ->
-      ValidatorHash ->
-      Natural ->
-      WrappedMintingPolicyType
-    )
-compiledPolicy = $$(PlutusTx.compile [||\a b c d e f -> wrapMintingPolicy (mkPolicy a b c d e f)||])
-
-unappliedPolicyScript :: Script
-unappliedPolicyScript = fromCompiledCode compiledPolicy
-
-policy :: NftCollection -> MintingPolicy
-policy NftCollection {..} =
-  Scripts.mkMintingPolicyScript $
-    compiledPolicy
-      `PlutusTx.applyCode` PlutusTx.liftCode nftCollection'collectionNftCs
-      `PlutusTx.applyCode` PlutusTx.liftCode nftCollection'lockingScript
-      `PlutusTx.applyCode` PlutusTx.liftCode nftCollection'author
-      `PlutusTx.applyCode` PlutusTx.liftCode nftCollection'authorShare
-      `PlutusTx.applyCode` PlutusTx.liftCode nftCollection'daoScript
-      `PlutusTx.applyCode` PlutusTx.liftCode nftCollection'daoShare
-
 policyDataScript :: Script
-policyDataScript = fromCompiledCode $$(PlutusTx.compile [||\a b c d e f -> wrapMintingPolicy (mkPolicyData a b c d e f)||])
+policyDataScript = fromCompiledCode $$(PlutusTx.compile [||\a b c d e f -> mkUntypedMintingPolicy (mkPolicyData a b c d e f)||])
 
 policyData :: NftCollection -> MintingPolicy
 policyData NftCollection {..} =

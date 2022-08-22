@@ -46,13 +46,13 @@
           compiler-nix-name = "ghc8107";
           shell = {
             additional = ps:
-              with ps; [
-                plutus-pab
-                bot-plutus-interface
-                plutus-use-cases
-                plutip
+              [
+                ps.plutus-pab
+                ps.bot-plutus-interface
+                ps.plutus-use-cases
+                ps.plutip
               ];
-            withHoogle = false;
+            withHoogle = true;
             tools.haskell-language-server = { };
             exactDeps = true;
             nativeBuildInputs = with pkgs'; [

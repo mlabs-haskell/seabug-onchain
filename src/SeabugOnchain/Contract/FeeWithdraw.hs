@@ -21,13 +21,13 @@ feeWithdraw pkhs = do
   let daoValidator' = daoValidator pkhs
       valHash = validatorHash daoValidator'
       scriptAddr = scriptHashAddress valHash
-  pkh <- Contract.ownPaymentPubKeyHash
+  pkh <- Contract.ownFirstPaymentPubKeyHash
   utxos <- getAddrUtxos scriptAddr
   let feeValues = mconcat $ map _ciTxOutValue $ Map.elems utxos
       lookup =
         Hask.mconcat
-          [ Constraints.typedValidatorLookups daoValidator'
-          , Constraints.otherScript (validatorScript daoValidator')
+          [ Constraints.plutusV1TypedValidatorLookups daoValidator'
+          , Constraints.plutusV1OtherScript (validatorScript daoValidator')
           , Constraints.unspentOutputs utxos
           , Constraints.ownPaymentPubKeyHash pkh
           ]

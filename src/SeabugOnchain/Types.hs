@@ -26,6 +26,7 @@ import Prelude qualified as Hask
 
 import Cardano.Prelude (decodeUtf8)
 import Data.Aeson (FromJSON (parseJSON), ToJSON, object, toJSON, (.=))
+import Data.Aeson.Key (fromText)
 import Data.Aeson.Types (parseFail)
 import Data.ByteString.Base16 (encode)
 import Data.Monoid (Last)
@@ -626,7 +627,7 @@ data SeabugMetadata = SeabugMetadata
 instance ToJSON SeabugMetadata where
   toJSON SeabugMetadata {..} =
     object
-      [ (toHex . getScriptHash $ sm'policyId)
+      [ (fromText . toHex . getScriptHash $ sm'policyId)
           .= object
             [ "mintPolicy" .= sm'mintPolicy
             , "collectionNftCS" .= unCurrencySymbol sm'collectionNftCS

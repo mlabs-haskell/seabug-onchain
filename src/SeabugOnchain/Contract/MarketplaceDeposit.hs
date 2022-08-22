@@ -4,12 +4,11 @@ import PlutusTx.Prelude hiding (mconcat)
 import Prelude qualified as Hask
 
 import Control.Monad (void)
-import Ledger (Datum (Datum), minAdaTxOut)
+import Ledger (Datum (Datum), minAdaTxOut, scriptCurrencySymbol)
+import Ledger.Ada (lovelaceValueOf, toValue)
 import Ledger.Constraints qualified as Constraints
-import Ledger.Contexts (scriptCurrencySymbol)
 import Ledger.Typed.Scripts (Any, validatorHash, validatorScript)
 import Plutus.Contract qualified as Contract
-import Plutus.V1.Ledger.Ada (lovelaceValueOf, toValue)
 import Plutus.V1.Ledger.Api (ToData (toBuiltinData))
 import Plutus.V1.Ledger.Value (assetClass, singleton)
 import Text.Printf (printf)
@@ -27,14 +26,14 @@ marketplaceDeposit nftData = do
       tn = mkTokenName . nftData'nftId $ nftData
       nftValue = singleton curr tn 1
       valHash = validatorHash marketplaceValidator
-  pkh <- Contract.ownPaymentPubKeyHash
+  pkh <- Contract.ownFirstPaymentPubKeyHash
   utxos <- getUserUtxos
   let lookup =
         Hask.mconcat
-          [ Constraints.mintingPolicy policy'
+          [ Constraints.plutusV1MintingPolicy policy'
           , Constraints.unspentOutputs utxos
-          , Constraints.typedValidatorLookups marketplaceValidator
-          , Constraints.otherScript (validatorScript marketplaceValidator)
+          , Constraints.plutusV1TypedValidatorLookups marketplaceValidator
+          , Constraints.plutusV1OtherScript (validatorScript marketplaceValidator)
           ]
       tx =
         Hask.mconcat

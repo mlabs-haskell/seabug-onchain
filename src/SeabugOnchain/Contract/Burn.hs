@@ -6,22 +6,12 @@ import Prelude qualified as Hask
 import Control.Monad (void)
 import Data.Default (def)
 import Data.Map qualified as Map
-import Ledger (
-  Extended (Finite, PosInf),
-  Interval (Interval),
-  LowerBound (LowerBound),
-  Redeemer (Redeemer),
-  UpperBound (UpperBound),
-  minAdaTxOut,
-  scriptHashAddress,
-  _ciTxOutValue,
- )
+import Ledger (Extended (Finite, PosInf), Interval (Interval), LowerBound (LowerBound), Redeemer (Redeemer), UpperBound (UpperBound), minAdaTxOut, scriptCurrencySymbol, scriptHashAddress, _ciTxOutValue)
+import Ledger.Ada (toValue)
 import Ledger.Constraints qualified as Constraints
-import Ledger.Contexts (scriptCurrencySymbol)
 import Ledger.TimeSlot (slotToBeginPOSIXTime)
 import Ledger.Typed.Scripts (Any, validatorScript)
 import Plutus.Contract qualified as Contract
-import Plutus.V1.Ledger.Ada (toValue)
 import Plutus.V1.Ledger.Api (toBuiltinData)
 import Plutus.V1.Ledger.Value (singleton, valueOf)
 import Text.Printf (printf)
@@ -33,8 +23,8 @@ import SeabugOnchain.Types
 
 burn :: NftData -> UserContract ()
 burn nftData = do
-  pkh <- Contract.ownPaymentPubKeyHash
-  currSlot <- Contract.currentSlot
+  pkh <- Contract.ownFirstPaymentPubKeyHash
+  currSlot <- Contract.currentPABSlot
   let collection = nftData'nftCollection nftData
       policy' = policyData collection
       curr = scriptCurrencySymbol policy'
@@ -61,9 +51,9 @@ burn nftData = do
   userUtxos <- getUserUtxos
   let lookup =
         Hask.mconcat
-          [ Constraints.mintingPolicy policy'
-          , Constraints.typedValidatorLookups lockValidator'
-          , Constraints.otherScript (validatorScript lockValidator')
+          [ Constraints.plutusV1MintingPolicy policy'
+          , Constraints.plutusV1TypedValidatorLookups lockValidator'
+          , Constraints.plutusV1OtherScript (validatorScript lockValidator')
           , Constraints.unspentOutputs $ Map.insert utxo utxoIndex userUtxos
           , Constraints.ownPaymentPubKeyHash pkh
           ]
