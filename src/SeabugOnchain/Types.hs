@@ -3,7 +3,7 @@
 module SeabugOnchain.Types (
   GenericContract,
   UserContract,
-  Natural (Natural),
+  Natural (UnsafeMkNatural),
   NFTAppSchema,
   MintParams (..),
   NftId (..),
@@ -42,44 +42,42 @@ import PlutusTx.Builtins.Internal qualified as Internal
 import PlutusTx.ErrorCodes (reconstructCaseError)
 import Schema (ToSchema)
 
-newtype Natural = Natural Integer
+newtype Natural = UnsafeMkNatural Integer
   deriving newtype (ToJSON, AdditiveSemigroup, AdditiveMonoid, MultiplicativeSemigroup, MultiplicativeMonoid)
   deriving stock (Hask.Show, Hask.Eq, Generic, Hask.Ord)
   deriving anyclass (ToSchema)
-  -- The unsafe stuff
-  deriving newtype (AdditiveGroup, Hask.Num)
 
 PlutusTx.makeLift ''Natural
 
 instance Eq Natural where
   {-# INLINEABLE (==) #-}
-  Natural x == Natural y = x == y
+  UnsafeMkNatural x == UnsafeMkNatural y = x == y
 
 instance FromJSON Natural where
   parseJSON v = do
     i <- parseJSON v
-    if i < 0 then parseFail "Natural less than 0" else Hask.pure (Natural i)
+    if i < 0 then parseFail "Natural less than 0" else Hask.pure (UnsafeMkNatural i)
 
 instance Enum Natural where
   {-# INLINEABLE toEnum #-}
   toEnum x
     | x < 0 = error ()
-    | otherwise = Natural x
+    | otherwise = UnsafeMkNatural x
   {-# INLINEABLE fromEnum #-}
-  fromEnum (Natural x) = x
+  fromEnum (UnsafeMkNatural x) = x
   {-# INLINEABLE succ #-}
-  succ (Natural x) = Natural $ succ x
+  succ (UnsafeMkNatural x) = UnsafeMkNatural $ succ x
   {-# INLINEABLE pred #-}
-  pred (Natural x) = Natural $ pred x
+  pred (UnsafeMkNatural x) = if x == 0 then error () else UnsafeMkNatural $ pred x
 
 instance PlutusTx.ToData Natural where
   {-# INLINEABLE toBuiltinData #-}
-  toBuiltinData (Natural x) = toBuiltinData x
+  toBuiltinData (UnsafeMkNatural x) = toBuiltinData x
 
 instance PlutusTx.FromData Natural where
   {-# INLINEABLE fromBuiltinData #-}
   fromBuiltinData bData =
-    fromBuiltinData bData >>= (\x -> if x < 0 then Nothing else Just $ Natural x)
+    fromBuiltinData bData >>= (\x -> if x < 0 then Nothing else Just $ UnsafeMkNatural x)
 
 instance PlutusTx.UnsafeFromData Natural where
   {-# INLINEABLE PlutusTx.unsafeFromBuiltinData #-}
