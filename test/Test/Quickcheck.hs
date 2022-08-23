@@ -1,9 +1,11 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE GADTs #-}
 
 module Test.Quickcheck (test) where
 
 import Control.Lens (makeLenses, view, (&), (.~), (^.))
 import Control.Monad (void, when)
+import Data.Data (Data)
 import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as Map
 import Data.Monoid (Last (..))
@@ -11,6 +13,7 @@ import Data.Set (Set)
 import Data.Set qualified as Set
 import Data.Text (Text)
 import Ledger (AssetClass, PaymentPubKeyHash (PaymentPubKeyHash), PubKeyHash, ValidatorHash (ValidatorHash), minAdaTxOut, scriptCurrencySymbol, unPaymentPubKeyHash)
+import Ledger.Ada (adaSymbol, adaToken, getLovelace, lovelaceValueOf, toValue)
 import Ledger.Typed.Scripts (validatorHash)
 import Plutus.Contract.Test (CheckOptions, Wallet (..), defaultCheckOptions, emulatorConfig, mockWalletPaymentPubKeyHash)
 import Plutus.Contract.Test.ContractModel (
@@ -31,13 +34,13 @@ import Plutus.Contract.Test.ContractModel (
  )
 import Plutus.Trace.Emulator (callEndpoint, initialChainState)
 import Plutus.Trace.Emulator qualified as Trace
-import Plutus.V1.Ledger.Ada (adaSymbol, adaToken, getLovelace, lovelaceValueOf, toValue)
 import Plutus.V1.Ledger.Value (CurrencySymbol (CurrencySymbol), Value, assetClass, assetClassValue, singleton, unAssetClass)
 import PlutusTx.Prelude hiding ((<$>), (<*>), (==))
 import Test.QuickCheck qualified as QC
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.QuickCheck (testProperty)
 import Test.Utils (walletFromNumber)
+import Type.Reflection (Typeable)
 import Prelude ((<$>), (<*>))
 import Prelude qualified as Hask
 
@@ -51,7 +54,7 @@ data MockInfo = MockInfo
   { _mock'owner :: Wallet
   , _mock'author :: Wallet
   }
-  deriving stock (Hask.Show, Hask.Eq)
+  deriving stock (Hask.Show, Hask.Eq, Typeable, Data)
 makeLenses ''MockInfo
 
 data NftModel = NftModel
@@ -62,7 +65,7 @@ data NftModel = NftModel
     _mUnusedCollections :: Set AssetClass
   , _mLockedFees :: Integer
   }
-  deriving stock (Hask.Show, Hask.Eq)
+  deriving stock (Hask.Show, Hask.Eq, Typeable, Data)
 makeLenses ''NftModel
 
 instance ContractModel NftModel where
@@ -100,7 +103,7 @@ instance ContractModel NftModel where
     | ActionFeeWithdraw
         { aPerformer :: Wallet -- TODO: better name
         }
-    deriving stock (Hask.Show, Hask.Eq)
+    deriving stock (Hask.Show, Hask.Eq, Typeable, Data)
 
   data ContractInstanceKey NftModel w s e p where
     UserKey :: Wallet -> ContractInstanceKey NftModel (Last NftData) NFTAppSchema Text ()
@@ -115,8 +118,8 @@ instance ContractModel NftModel where
 
   arbitraryAction model =
     let genWallet = QC.elements wallets
-        genNonNeg = Natural . (* 1_000_000) . (+ 25) . QC.getNonNegative <$> QC.arbitrary
-        genShare = Natural <$> QC.elements [0 .. 4500]
+        genNonNeg = toEnum . (* 1_000_000) . (+ 25) . QC.getNonNegative <$> QC.arbitrary
+        genShare = toEnum <$> QC.elements [0 .. 4500]
         genNftId = QC.elements $ addNonExistingNFT $ Map.toList (model ^. contractState . mNfts)
         genMarketplaceNftId = QC.elements $ addNonExistingNFT $ Map.toList (model ^. contractState . mMarketplace)
         genCollection = QC.elements hardcodedCollections
@@ -244,7 +247,7 @@ instance ContractModel NftModel where
   nextState ActionMarketplaceRedeem {..} = do
     let wal = aMockInfo ^. mock'owner
         curr = getCurr aNftData
-        newPrice = nftId'price oldNft + 1
+        newPrice = succ $ nftId'price oldNft
         oldNft = nftData'nftId aNftData
         newNft = oldNft {nftId'price = newPrice}
         collection = nftData'nftCollection aNftData
@@ -335,7 +338,7 @@ initialDistribution =
 nonExsistingNFT :: NftId
 nonExsistingNFT =
   NftId
-    { nftId'price = 0
+    { nftId'price = zero
     , nftId'owner = PaymentPubKeyHash ""
     , nftId'collectionNftTn = ""
     }
@@ -348,9 +351,9 @@ nonExistingCollection =
     , nftCollection'lockLockupEnd = 0
     , nftCollection'lockingScript = ValidatorHash ""
     , nftCollection'author = PaymentPubKeyHash ""
-    , nftCollection'authorShare = 0
+    , nftCollection'authorShare = zero
     , nftCollection'daoScript = ValidatorHash ""
-    , nftCollection'daoShare = 0
+    , nftCollection'daoShare = zero
     }
 
 test :: TestTree

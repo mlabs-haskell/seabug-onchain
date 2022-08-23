@@ -1,4 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DerivingVia #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 module SeabugOnchain.Types (
   GenericContract,
@@ -29,6 +31,7 @@ import Data.Aeson (FromJSON (parseJSON), ToJSON, object, toJSON, (.=))
 import Data.Aeson.Key (fromText)
 import Data.Aeson.Types (parseFail)
 import Data.ByteString.Base16 (encode)
+import Data.Data (Data)
 import Data.Monoid (Last)
 import Data.Text (Text)
 import GHC.Generics (Generic)
@@ -42,10 +45,16 @@ import PlutusTx.Builtins.Internal (BuiltinByteString (BuiltinByteString), equals
 import PlutusTx.Builtins.Internal qualified as Internal
 import PlutusTx.ErrorCodes (reconstructCaseError)
 import Schema (ToSchema)
+import Type.Reflection (Typeable)
+
+-- Instances for Data
+deriving stock instance (Data PubKeyHash)
+deriving stock instance (Data PaymentPubKeyHash)
+deriving stock instance (Data ValidatorHash)
 
 newtype Natural = UnsafeMkNatural Integer
   deriving newtype (ToJSON, AdditiveSemigroup, AdditiveMonoid, MultiplicativeSemigroup, MultiplicativeMonoid)
-  deriving stock (Hask.Show, Hask.Eq, Generic, Hask.Ord)
+  deriving stock (Hask.Show, Hask.Eq, Generic, Hask.Ord, Typeable, Data)
   deriving anyclass (ToSchema)
 
 PlutusTx.makeLift ''Natural
@@ -106,7 +115,7 @@ data NftId = NftId
   , nftId'price :: Natural
   , nftId'owner :: PaymentPubKeyHash
   }
-  deriving stock (Hask.Show, Generic, Hask.Eq, Hask.Ord)
+  deriving stock (Hask.Show, Generic, Hask.Eq, Hask.Ord, Typeable, Data)
   deriving anyclass (FromJSON, ToJSON, ToSchema)
 
 instance PlutusTx.ToData NftId where
@@ -191,14 +200,14 @@ data NftCollection = NftCollection
   , nftCollection'daoScript :: ValidatorHash
   , nftCollection'daoShare :: Natural
   }
-  deriving stock (Hask.Show, Generic, Hask.Eq, Hask.Ord)
+  deriving stock (Hask.Show, Generic, Hask.Eq, Hask.Ord, Typeable, Data)
   deriving anyclass (FromJSON, ToJSON, ToSchema)
 
 data NftData = NftData
   { nftData'nftCollection :: NftCollection
   , nftData'nftId :: NftId
   }
-  deriving stock (Hask.Show, Generic, Hask.Eq, Hask.Ord)
+  deriving stock (Hask.Show, Generic, Hask.Eq, Hask.Ord, Typeable, Data)
   deriving anyclass (FromJSON, ToJSON, ToSchema)
 
 data SetPriceParams = SetPriceParams

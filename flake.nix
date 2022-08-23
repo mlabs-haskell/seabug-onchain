@@ -1,5 +1,6 @@
 {
   description = "seabug-onchain";
+  nixConfig.bash-prompt = "\\[\\e[0m\\][\\[\\e[0;2m\\]nix-develop \\[\\e[0;1m\\]seabug-onchain \\[\\e[0;93m\\]\\w\\[\\e[0m\\]]\\[\\e[0m\\]$ \\[\\e[0m\\]";
 
   inputs = {
     haskell-nix.follows = "plutip/bot-plutus-interface/haskell-nix";
@@ -28,7 +29,14 @@
         };
       nixpkgsFor' = system: import nixpkgs { inherit system; };
 
-      haskellModules = inputs.plutip.haskellModules;
+      haskellModules = inputs.plutip.haskellModules ++ [
+        ({ config, pkgs, ... }: {
+          packages.seabug-onchain.components.tests."seabug-onchain-tests".build-tools = [
+            config.hsPkgs.cardano-cli.components.exes.cardano-cli
+            config.hsPkgs.cardano-node.components.exes.cardano-node
+          ];
+        })
+      ];
 
       extraSources = inputs.plutip.extraSources ++ [{
         src = inputs.plutip;
@@ -39,38 +47,40 @@
         let
           pkgs = nixpkgsFor system;
           pkgs' = nixpkgsFor' system;
-        in
-        pkgs.haskell-nix.cabalProject {
-          name = "seabug-onchain";
-          src = ./.;
-          compiler-nix-name = "ghc8107";
-          shell = {
-            additional = ps:
-              [
-                ps.plutus-pab
-                ps.bot-plutus-interface
-                ps.plutus-use-cases
-                ps.plutip
+          project = pkgs.haskell-nix.cabalProject {
+            name = "seabug-onchain";
+            src = ./.;
+            compiler-nix-name = "ghc8107";
+            shell = {
+              additional = ps:
+                [
+                  ps.plutus-pab
+                  ps.bot-plutus-interface
+                  ps.plutus-use-cases
+                  ps.plutip
+                ];
+              withHoogle = true;
+              tools.haskell-language-server = { };
+              exactDeps = true;
+              nativeBuildInputs = with pkgs'; [
+                cabal-install
+                haskellPackages.cabal-fmt
+                haskellPackages.implicit-hie
+                haskellPackages.fourmolu
+                hlint
+                jq
+                websocat
+                fd
+                nixpkgs-fmt
+                project.hsPkgs.cardano-cli.components.exes.cardano-cli
+                project.hsPkgs.cardano-node.components.exes.cardano-node
               ];
-            withHoogle = true;
-            tools.haskell-language-server = { };
-            exactDeps = true;
-            nativeBuildInputs = with pkgs'; [
-              cabal-install
-              haskellPackages.cabal-fmt
-              haskellPackages.implicit-hie
-              haskellPackages.fourmolu
-              hlint
-              jq
-              websocat
-              fd
-              nixpkgs-fmt
-            ];
+            };
+            inherit (plutip) cabalProjectLocal;
+            inherit extraSources;
+            modules = haskellModules;
           };
-          inherit (plutip) cabalProjectLocal;
-          inherit extraSources;
-          modules = haskellModules;
-        };
+        in project;
 
       formatCheckFor = system:
         let

@@ -16,7 +16,6 @@ import Prelude qualified as Hask
 import Control.Monad (void)
 
 -- import Data.Aeson (toJSON)
-import Data.Default (def)
 
 -- import Data.Map qualified as Map
 import Data.Text (pack)
@@ -28,8 +27,7 @@ import Ledger.Constraints qualified as Constraints
 
 -- import Ledger.Constraints.Metadata (OtherFields (OtherFields), TxMetadata (TxMetadata))
 
-import Ledger.Ada (lovelaceValueOf, toValue)
-import Ledger.TimeSlot (slotToBeginPOSIXTime)
+import Ledger.Ada (toValue)
 import Ledger.Typed.Scripts (validatorHash)
 import Plutus.Contract qualified as Contract
 import Plutus.Contracts.Currency (CurrencyError, mintContract)
@@ -54,9 +52,9 @@ mintWithCollection (ac, mp) = do
   pkh <- Contract.ownFirstPaymentPubKeyHash
   utxos <- getUserUtxos
   currSlot <- Contract.currentPABSlot
+  now <- Contract.currentTime
   Contract.logInfo @Hask.String $ printf "Curr slot: %s" (Hask.show currSlot)
   let owner = fromMaybe (pkh, Nothing) (mp'owner mp)
-      now = slotToBeginPOSIXTime def currSlot
       author = fromMaybe pkh $ mp'fakeAuthor mp
       nft =
         NftId
@@ -115,11 +113,7 @@ mintWithCollection (ac, mp) = do
               Interval
                 (LowerBound (Finite now) True)
                 (UpperBound PosInf False)
-          , -- , Constraints.mustIncludeMetadata meta
-            Constraints.mustPayWithDatumToPubKey pkh (Datum $ toBuiltinData ()) (lovelaceValueOf 5_000_000)
-          , Constraints.mustPayWithDatumToPubKey pkh (Datum $ toBuiltinData ()) (lovelaceValueOf 5_000_000)
-          , Constraints.mustPayWithDatumToPubKey pkh (Datum $ toBuiltinData ()) (lovelaceValueOf 5_000_000)
-          , Constraints.mustPayWithDatumToPubKey pkh (Datum $ toBuiltinData ()) (lovelaceValueOf 5_000_000)
+          -- , Constraints.mustIncludeMetadata meta
           ]
   void $ Contract.submitTxConstraintsWith @Void lookup tx
   Contract.tell . Hask.pure $ nftData
