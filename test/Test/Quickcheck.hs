@@ -115,8 +115,8 @@ instance ContractModel NftModel where
 
   arbitraryAction model =
     let genWallet = QC.elements wallets
-        genNonNeg = Natural . (* 1_000_000) . (+ 25) . QC.getNonNegative <$> QC.arbitrary
-        genShare = Natural <$> QC.elements [0 .. 4500]
+        genNonNeg = toEnum . (* 1_000_000) . (+ 25) . QC.getNonNegative <$> QC.arbitrary
+        genShare = toEnum <$> QC.elements [0 .. 4500]
         genNftId = QC.elements $ addNonExistingNFT $ Map.toList (model ^. contractState . mNfts)
         genMarketplaceNftId = QC.elements $ addNonExistingNFT $ Map.toList (model ^. contractState . mMarketplace)
         genCollection = QC.elements hardcodedCollections
@@ -244,7 +244,7 @@ instance ContractModel NftModel where
   nextState ActionMarketplaceRedeem {..} = do
     let wal = aMockInfo ^. mock'owner
         curr = getCurr aNftData
-        newPrice = nftId'price oldNft + 1
+        newPrice = succ $ nftId'price oldNft
         oldNft = nftData'nftId aNftData
         newNft = oldNft {nftId'price = newPrice}
         collection = nftData'nftCollection aNftData
@@ -335,7 +335,7 @@ initialDistribution =
 nonExsistingNFT :: NftId
 nonExsistingNFT =
   NftId
-    { nftId'price = 0
+    { nftId'price = zero
     , nftId'owner = PaymentPubKeyHash ""
     , nftId'collectionNftTn = ""
     }
@@ -348,9 +348,9 @@ nonExistingCollection =
     , nftCollection'lockLockupEnd = 0
     , nftCollection'lockingScript = ValidatorHash ""
     , nftCollection'author = PaymentPubKeyHash ""
-    , nftCollection'authorShare = 0
+    , nftCollection'authorShare = zero
     , nftCollection'daoScript = ValidatorHash ""
-    , nftCollection'daoShare = 0
+    , nftCollection'daoShare = zero
     }
 
 test :: TestTree
