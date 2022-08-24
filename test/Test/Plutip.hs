@@ -8,12 +8,13 @@ import Data.Monoid (Last)
 import Data.Text (Text)
 import Ledger (PaymentPubKeyHash (unPaymentPubKeyHash), Value)
 import Plutus.Contract (waitNSlots)
+import PlutusTx.Prelude (toEnum)
 import Test.Plutip.Contract (assertExecution, initAda, withContractAs)
 import Test.Plutip.Internal.Types (ClusterEnv, ExecutionResult (ExecutionResult))
 import Test.Plutip.LocalCluster (BpiWallet, withCluster)
 import Test.Plutip.Predicate (shouldFail, shouldSucceed)
 import Test.Tasty (TestTree)
-import Prelude
+import Prelude hiding (toEnum)
 
 import Control.Monad (void)
 import SeabugOnchain.Contract.Burn (burn)
@@ -47,10 +48,10 @@ testValid = do
     cnft <- generateNft
     void $ waitNSlots 1
 
-    nft1 <- mintWithCollection (cnft, MintParams 0 50_00 10_000_000 5 5 Nothing pkhs Nothing "V1")
+    nft1 <- mintWithCollection (cnft, MintParams (toEnum 0) (toEnum 50_00) (toEnum 10_000_000) 5 5 Nothing pkhs Nothing "V1")
     void $ waitNSlots 1
 
-    nft2 <- setPrice (SetPriceParams nft1 50_000_000)
+    nft2 <- setPrice (SetPriceParams nft1 (toEnum 50_000_000))
     void $ waitNSlots 1
 
     nft3 <- marketplaceDeposit nft2
@@ -67,13 +68,13 @@ testValid = do
         nft4 <- marketplaceBuy nft3
         void $ waitNSlots 1
 
-        nft5 <- marketplaceSetPrice (SetPriceParams nft4 25_000_000)
+        nft5 <- marketplaceSetPrice (SetPriceParams nft4 (toEnum 25_000_000))
         void $ waitNSlots 1
 
         nft6 <- marketplaceRedeem nft5
         void $ waitNSlots 1
 
-        nft7 <- setPrice (SetPriceParams nft6 20_000_000)
+        nft7 <- setPrice (SetPriceParams nft6 (toEnum 20_000_000))
         void $ waitNSlots 1
 
         burn nft7
@@ -91,7 +92,7 @@ testGift = do
     cnft <- generateNft
     void $ waitNSlots 1
 
-    nft1 <- mintWithCollection (cnft, MintParams 0 50_00 0 5 5 Nothing pkhs Nothing "V1")
+    nft1 <- mintWithCollection (cnft, MintParams (toEnum 0) (toEnum 50_00) (toEnum 0) 5 5 Nothing pkhs Nothing "V1")
     void $ waitNSlots 1
 
     nft2 <- marketplaceDeposit nft1
@@ -111,7 +112,7 @@ testChangePriceNotOwner = do
       cnft <- generateNft
       void $ waitNSlots 1
 
-      nft1 <- mintWithCollection (cnft, MintParams 0 0 10_000_000 5 5 Nothing [] Nothing "V1")
+      nft1 <- mintWithCollection (cnft, MintParams (toEnum 0) (toEnum 0) (toEnum 10_000_000) 5 5 Nothing [] Nothing "V1")
       void $ waitNSlots 1
 
       nft2 <- marketplaceDeposit nft1
@@ -121,7 +122,7 @@ testChangePriceNotOwner = do
 
   withContractAs 1 $
     const $ do
-      void $ marketplaceSetPrice (SetPriceParams nft2 20_000_000)
+      void $ marketplaceSetPrice (SetPriceParams nft2 (toEnum 20_000_000))
       void $ waitNSlots 1
 
 testRedeemNotOwner :: TestCase
@@ -131,7 +132,7 @@ testRedeemNotOwner = do
       cnft <- generateNft
       void $ waitNSlots 1
 
-      nft1 <- mintWithCollection (cnft, MintParams 0 0 10_000_000 5 5 Nothing [] Nothing "V1")
+      nft1 <- mintWithCollection (cnft, MintParams (toEnum 0) (toEnum 0) (toEnum 10_000_000) 5 5 Nothing [] Nothing "V1")
       void $ waitNSlots 1
 
       nft2 <- marketplaceDeposit nft1
@@ -151,7 +152,7 @@ testBurnTooEarly = do
       cnft <- generateNft
       void $ waitNSlots 1
 
-      nft1 <- mintWithCollection (cnft, MintParams 0 0 10_000_000 5_000_000_000 5_000_000_000 Nothing [] Nothing "V1")
+      nft1 <- mintWithCollection (cnft, MintParams (toEnum 0) (toEnum 0) (toEnum 10_000_000) 5_000_000_000 5_000_000_000 Nothing [] Nothing "V1")
       void $ waitNSlots 1
 
       burn nft1

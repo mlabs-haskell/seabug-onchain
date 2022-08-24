@@ -3,6 +3,7 @@
 module SeabugOnchain.Types (
   GenericContract,
   UserContract,
+  Natural (UnsafeMkNatural),
   NFTAppSchema,
   MintParams (..),
   NftId (..),
@@ -24,7 +25,8 @@ import PlutusTx.Prelude hiding (decodeUtf8)
 import Prelude qualified as Hask
 
 import Cardano.Prelude (decodeUtf8)
-import Data.Aeson (FromJSON, ToJSON, object, toJSON, (.=))
+import Data.Aeson (FromJSON (parseJSON), ToJSON, object, toJSON, (.=))
+import Data.Aeson.Types (parseFail)
 import Data.ByteString.Base16 (encode)
 import Data.Monoid (Last)
 import Data.Text (Text)
@@ -40,13 +42,54 @@ import PlutusTx.Builtins.Internal qualified as Internal
 import PlutusTx.ErrorCodes (reconstructCaseError)
 import Schema (ToSchema)
 
+newtype Natural = UnsafeMkNatural Integer
+  deriving newtype (ToJSON, AdditiveSemigroup, AdditiveMonoid, MultiplicativeSemigroup, MultiplicativeMonoid)
+  deriving stock (Hask.Show, Hask.Eq, Generic, Hask.Ord)
+  deriving anyclass (ToSchema)
+
+PlutusTx.makeLift ''Natural
+
+instance Eq Natural where
+  {-# INLINEABLE (==) #-}
+  UnsafeMkNatural x == UnsafeMkNatural y = x == y
+
+instance FromJSON Natural where
+  parseJSON v = do
+    i <- parseJSON v
+    if i < 0 then parseFail "Natural less than 0" else Hask.pure (UnsafeMkNatural i)
+
+instance Enum Natural where
+  {-# INLINEABLE toEnum #-}
+  toEnum x
+    | x < 0 = error ()
+    | otherwise = UnsafeMkNatural x
+  {-# INLINEABLE fromEnum #-}
+  fromEnum (UnsafeMkNatural x) = x
+  {-# INLINEABLE succ #-}
+  succ (UnsafeMkNatural x) = UnsafeMkNatural $ succ x
+  {-# INLINEABLE pred #-}
+  pred (UnsafeMkNatural x) = if x == 0 then error () else UnsafeMkNatural $ pred x
+
+instance PlutusTx.ToData Natural where
+  {-# INLINEABLE toBuiltinData #-}
+  toBuiltinData (UnsafeMkNatural x) = toBuiltinData x
+
+instance PlutusTx.FromData Natural where
+  {-# INLINEABLE fromBuiltinData #-}
+  fromBuiltinData bData =
+    fromBuiltinData bData >>= (\x -> if x < 0 then Nothing else Just $ UnsafeMkNatural x)
+
+instance PlutusTx.UnsafeFromData Natural where
+  {-# INLINEABLE PlutusTx.unsafeFromBuiltinData #-}
+  unsafeFromBuiltinData bData = toEnum $ unsafeFromBuiltinData bData
+
 -- | Parameters that need to be submitted when minting a new NFT.
 data MintParams = MintParams
   { -- | Shares retained by author.
-    mp'authorShare :: Integer
-  , mp'daoShare :: Integer
+    mp'authorShare :: Natural
+  , mp'daoShare :: Natural
   , -- | Listing price of the NFT, in Lovelace.
-    mp'price :: Integer
+    mp'price :: Natural
   , mp'lockLockup :: Integer
   , mp'lockLockupEnd :: Slot
   , mp'fakeAuthor :: Maybe PaymentPubKeyHash
@@ -59,7 +102,7 @@ data MintParams = MintParams
 
 data NftId = NftId
   { nftId'collectionNftTn :: TokenName
-  , nftId'price :: Integer
+  , nftId'price :: Natural
   , nftId'owner :: PaymentPubKeyHash
   }
   deriving stock (Hask.Show, Generic, Hask.Eq, Hask.Ord)
@@ -143,9 +186,9 @@ data NftCollection = NftCollection
   , nftCollection'lockLockupEnd :: Slot
   , nftCollection'lockingScript :: ValidatorHash
   , nftCollection'author :: PaymentPubKeyHash
-  , nftCollection'authorShare :: Integer
+  , nftCollection'authorShare :: Natural
   , nftCollection'daoScript :: ValidatorHash
-  , nftCollection'daoShare :: Integer
+  , nftCollection'daoShare :: Natural
   }
   deriving stock (Hask.Show, Generic, Hask.Eq, Hask.Ord)
   deriving anyclass (FromJSON, ToJSON, ToSchema)
@@ -161,7 +204,7 @@ data SetPriceParams = SetPriceParams
   { -- | Token which price is set.
     sp'nftData :: NftData
   , -- | New price, in Lovelace.
-    sp'price :: Integer
+    sp'price :: Natural
   }
   deriving stock (Hask.Show, Generic, Hask.Eq)
   deriving anyclass (FromJSON, ToJSON, ToSchema)
@@ -177,7 +220,7 @@ data ChangeOwnerParams = ChangeOwnerParams
 
 data MintAct
   = MintToken NftId
-  | ChangePrice NftId Integer
+  | ChangePrice NftId Natural
   | ChangeOwner NftId PaymentPubKeyHash
   | BurnToken NftId
   deriving stock (Hask.Show)
@@ -342,8 +385,8 @@ instance PlutusTx.UnsafeFromData MintAct where
           unitval
 
 data LockAct
-  = Unstake PaymentPubKeyHash Integer
-  | Restake PaymentPubKeyHash Integer
+  = Unstake PaymentPubKeyHash Natural
+  | Restake PaymentPubKeyHash Natural
   deriving stock (Hask.Show)
 
 instance PlutusTx.ToData LockAct where
@@ -524,9 +567,9 @@ instance Hashable BuiltinByteString where
   {-# INLINEABLE hash #-}
   hash = blake2b_256
 
-instance Hashable Integer where
+instance Hashable Natural where
   {-# INLINEABLE hash #-}
-  hash = hash . toBin
+  hash = hash . toBin . fromEnum
     where
       {-# INLINEABLE toBin #-}
       toBin :: Integer -> BuiltinByteString
@@ -573,11 +616,11 @@ data SeabugMetadata = SeabugMetadata
   , sm'collectionNftTN :: TokenName
   , sm'lockingScript :: ValidatorHash
   , sm'authorPkh :: PubKeyHash
-  , sm'authorShare :: Integer
+  , sm'authorShare :: Natural
   , sm'marketplaceScript :: ValidatorHash
-  , sm'marketplaceShare :: Integer
+  , sm'marketplaceShare :: Natural
   , sm'ownerPkh :: PubKeyHash
-  , sm'ownerPrice :: Integer
+  , sm'ownerPrice :: Natural
   }
 
 instance ToJSON SeabugMetadata where
