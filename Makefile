@@ -103,9 +103,9 @@ readme_contents:
 
 # Target to use as dependency to fail if not inside nix-shell
 requires_nix_shell:
-	@ [ "$(IN_NIX_SHELL)" ] || echo "The $(MAKECMDGOALS) target must be run from inside nix-shell"
-	@ [ "$(IN_NIX_SHELL)" ] || (echo "    run 'nix-shell --pure' first" && false)
+	@ [ "$(IN_NIX_SHELL)" ] || echo "The $(MAKECMDGOALS) target must be run from inside `nix develop`"
+	@ [ "$(IN_NIX_SHELL)" ] || (echo "    run `nix develop` first" && false)
 
-build_path = dist-newstyle/build/x86_64-linux/ghc-8.10.4.20210212/seabug-onchain-0.1
+build_path = dist-newstyle/build/x86_64-linux/ghc-8.10.7/seabug-onchain-0.1.0.0/
 clear_build:
 	@[ ! -e $(build_path) ] || rm -rf $(build_path)
