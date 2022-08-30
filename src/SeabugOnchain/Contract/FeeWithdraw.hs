@@ -26,7 +26,7 @@ feeWithdraw pkhs = do
   let feeValues = mconcat $ map _ciTxOutValue $ Map.elems utxos
       lookup =
         Hask.mconcat
-          [ Constraints.plutusV1TypedValidatorLookups daoValidator'
+          [ Constraints.typedValidatorLookups daoValidator'
           , Constraints.plutusV1OtherScript (validatorScript daoValidator')
           , Constraints.unspentOutputs utxos
           , Constraints.ownPaymentPubKeyHash pkh

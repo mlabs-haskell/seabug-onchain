@@ -56,7 +56,7 @@ marketplaceBuy nftData = do
   let lookup =
         Hask.mconcat
           [ Constraints.plutusV1MintingPolicy policy'
-          , Constraints.plutusV1TypedValidatorLookups marketplaceValidator
+          , Constraints.typedValidatorLookups marketplaceValidator
           , Constraints.plutusV1OtherScript (validatorScript marketplaceValidator)
           , Constraints.unspentOutputs $ Map.insert utxo utxoIndex userUtxos
           , Constraints.ownPaymentPubKeyHash pkh

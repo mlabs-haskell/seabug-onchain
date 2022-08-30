@@ -52,7 +52,7 @@ burn nftData = do
   let lookup =
         Hask.mconcat
           [ Constraints.plutusV1MintingPolicy policy'
-          , Constraints.plutusV1TypedValidatorLookups lockValidator'
+          , Constraints.typedValidatorLookups lockValidator'
           , Constraints.plutusV1OtherScript (validatorScript lockValidator')
           , Constraints.unspentOutputs $ Map.insert utxo utxoIndex userUtxos
           , Constraints.ownPaymentPubKeyHash pkh

@@ -3,6 +3,6 @@ cradle:
     - path: "./src"
       component: "lib:seabug-onchain"
     - path: "./app"
-      component: "exe:seabug-onchain"
+      component: "exe:seabug-pab"
     - path: "./test"
       component: "test:seabug-onchain-tests"

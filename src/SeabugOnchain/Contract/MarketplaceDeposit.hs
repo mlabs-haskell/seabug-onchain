@@ -32,7 +32,7 @@ marketplaceDeposit nftData = do
         Hask.mconcat
           [ Constraints.plutusV1MintingPolicy policy'
           , Constraints.unspentOutputs utxos
-          , Constraints.plutusV1TypedValidatorLookups marketplaceValidator
+          , Constraints.typedValidatorLookups marketplaceValidator
           , Constraints.plutusV1OtherScript (validatorScript marketplaceValidator)
           ]
       tx =

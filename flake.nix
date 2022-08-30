@@ -12,7 +12,7 @@
       flake = false;
     };
     plutip.url =
-      "github:mlabs-haskell/plutip?rev=1ee56e97d3c00bf125b5c4657ef9345a14b8dfc7";
+      "github:mlabs-haskell/plutip?rev=ae394a66a1acb19f6a3c0efe6548d3f25122dd7b";
   };
 
   outputs = { self, plutip, nixpkgs, haskell-nix, iohk-nix, ... }@inputs:
