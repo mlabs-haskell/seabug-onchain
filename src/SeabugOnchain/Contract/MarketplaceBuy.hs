@@ -29,7 +29,7 @@ marketplaceBuy nftData = do
       scriptAddr = scriptAddress . validatorScript $ marketplaceValidator
       containsNft (_, tx) = valueOf (_ciTxOutValue tx) curr oldName == 1
       valHash = validatorHash marketplaceValidator
-      nftPrice = nftId'price nft
+      nftPrice = fromEnum $ nftId'price nft
       newNft = nft {nftId'owner = pkh}
       oldName = mkTokenName nft
       newName = mkTokenName newNft
@@ -37,8 +37,8 @@ marketplaceBuy nftData = do
       newNftValue = singleton curr newName 1
       mintRedeemer = Redeemer . toBuiltinData $ ChangeOwner nft pkh
       getShare share = (nftPrice * share) `divide` 10000
-      authorShare = getShare (nftCollection'authorShare . nftData'nftCollection $ nftData)
-      daoShare = getShare (nftCollection'daoShare . nftData'nftCollection $ nftData)
+      authorShare = getShare (fromEnum . nftCollection'authorShare . nftData'nftCollection $ nftData)
+      daoShare = getShare (fromEnum . nftCollection'daoShare . nftData'nftCollection $ nftData)
       shareToSubtract v
         | v < getLovelace minAdaTxOut = 0
         | otherwise = v

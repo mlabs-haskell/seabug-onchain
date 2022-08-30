@@ -123,7 +123,7 @@ mkValidator _ lockup lockupEnd inDatum act ctx =
     checkNoSgMinted = isNothing . AssocMap.lookup (ld'sgNft inDatum) . getValue . txInfoMint $ info
 
     -- Checks that input contains corresponding Seabug NFT
-    checkInputContainsSg :: Integer -> PaymentPubKeyHash -> Bool
+    checkInputContainsSg :: Natural -> PaymentPubKeyHash -> Bool
     checkInputContainsSg price owner =
       let tn = mkTokenName $ NftId (ld'underlyingTn inDatum) price owner
           containsSg tx = valueOf (txOutValue tx) (ld'sgNft inDatum) tn == 1
@@ -150,7 +150,7 @@ mkValidator _ lockup lockupEnd inDatum act ctx =
     checkNoCO :: Bool
     checkNoCO = null . getContinuingOutputs $ ctx
 
-    checkSgBurned :: Integer -> PaymentPubKeyHash -> Bool
+    checkSgBurned :: Natural -> PaymentPubKeyHash -> Bool
     checkSgBurned price owner =
       let tn = mkTokenName $ NftId (ld'underlyingTn inDatum) price owner
        in valueOf (txInfoMint info) (ld'sgNft inDatum) tn == (-1)
