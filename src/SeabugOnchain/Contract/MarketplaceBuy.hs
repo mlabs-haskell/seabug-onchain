@@ -13,7 +13,6 @@ import Plutus.Contract qualified as Contract
 import Plutus.V1.Ledger.Ada (getLovelace, lovelaceValueOf, toValue)
 import Plutus.V1.Ledger.Api (Redeemer (Redeemer), toBuiltinData)
 import Plutus.V1.Ledger.Value (assetClass, singleton, valueOf)
-import PlutusTx.Numeric.Extra (addExtend)
 import Text.Printf (printf)
 
 import SeabugOnchain.Contract.Aux
@@ -24,26 +23,26 @@ import SeabugOnchain.Types
 marketplaceBuy :: NftData -> UserContract NftData
 marketplaceBuy nftData = do
   pkh <- Contract.ownPaymentPubKeyHash
-  let policy' = policy . nftData'nftCollection $ nftData
+  let policy' = policyData . nftData'nftCollection $ nftData
       nft = nftData'nftId nftData
       curr = scriptCurrencySymbol policy'
       scriptAddr = scriptAddress . validatorScript $ marketplaceValidator
       containsNft (_, tx) = valueOf (_ciTxOutValue tx) curr oldName == 1
       valHash = validatorHash marketplaceValidator
-      nftPrice = nftId'price nft
+      nftPrice = fromEnum $ nftId'price nft
       newNft = nft {nftId'owner = pkh}
       oldName = mkTokenName nft
       newName = mkTokenName newNft
       oldNftValue = singleton curr oldName (-1)
       newNftValue = singleton curr newName 1
       mintRedeemer = Redeemer . toBuiltinData $ ChangeOwner nft pkh
-      getShare share = (addExtend nftPrice * share) `divide` 10000
-      authorShare = getShare (addExtend . nftCollection'authorShare . nftData'nftCollection $ nftData)
-      daoShare = getShare (addExtend . nftCollection'daoShare . nftData'nftCollection $ nftData)
+      getShare share = (nftPrice * share) `divide` 10000
+      authorShare = getShare (fromEnum . nftCollection'authorShare . nftData'nftCollection $ nftData)
+      daoShare = getShare (fromEnum . nftCollection'daoShare . nftData'nftCollection $ nftData)
       shareToSubtract v
         | v < getLovelace minAdaTxOut = 0
         | otherwise = v
-      ownerShare = addExtend nftPrice - shareToSubtract authorShare - shareToSubtract daoShare
+      ownerShare = nftPrice - shareToSubtract authorShare - shareToSubtract daoShare
       datum = Datum . toBuiltinData $ (curr, oldName)
       filterLowValue v t
         | v < getLovelace minAdaTxOut = mempty

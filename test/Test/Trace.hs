@@ -1,4 +1,4 @@
-module Test.Trace where
+module Test.Trace (test) where
 
 import PlutusTx.Prelude
 import Prelude qualified as Hask
@@ -15,8 +15,6 @@ import Wallet.Emulator qualified as Emulator
 import SeabugOnchain.Api
 import SeabugOnchain.Types
 import Test.Utils (walletFromNumber)
-
-type AppTraceHandle a = Trace.ContractHandle NftId NFTAppSchema a
 
 mintTrace :: Emulator.Wallet -> EmulatorTrace ()
 mintTrace wallet = do
@@ -59,10 +57,8 @@ mintTrace wallet = do
         , mp'mintPolicy = "V1"
         }
 
-w1, w2, w3 :: Wallet
+w1 :: Wallet
 w1 = walletFromNumber 1
-w2 = walletFromNumber 2
-w3 = walletFromNumber 3
 
 test :: Hask.IO ()
 test = runEmulatorTraceIO $ mintTrace w1

@@ -3,6 +3,7 @@
 module SeabugOnchain.Types (
   GenericContract,
   UserContract,
+  Natural (UnsafeMkNatural),
   NFTAppSchema,
   MintParams (..),
   NftId (..),
@@ -24,7 +25,8 @@ import PlutusTx.Prelude hiding (decodeUtf8)
 import Prelude qualified as Hask
 
 import Cardano.Prelude (decodeUtf8)
-import Data.Aeson (FromJSON, ToJSON, object, toJSON, (.=))
+import Data.Aeson (FromJSON (parseJSON), ToJSON, object, toJSON, (.=))
+import Data.Aeson.Types (parseFail)
 import Data.ByteString.Base16 (encode)
 import Data.Monoid (Last)
 import Data.Text (Text)
@@ -38,8 +40,48 @@ import PlutusTx.Builtins (blake2b_256, matchData', matchList)
 import PlutusTx.Builtins.Internal (BuiltinByteString (BuiltinByteString), equalsInteger, ifThenElse, mkCons, mkConstr, mkNilData, unitval, unsafeDataAsConstr)
 import PlutusTx.Builtins.Internal qualified as Internal
 import PlutusTx.ErrorCodes (reconstructCaseError)
-import PlutusTx.Natural (Natural)
 import Schema (ToSchema)
+
+newtype Natural = UnsafeMkNatural Integer
+  deriving newtype (ToJSON, AdditiveSemigroup, AdditiveMonoid, MultiplicativeSemigroup, MultiplicativeMonoid)
+  deriving stock (Hask.Show, Hask.Eq, Generic, Hask.Ord)
+  deriving anyclass (ToSchema)
+
+PlutusTx.makeLift ''Natural
+
+instance Eq Natural where
+  {-# INLINEABLE (==) #-}
+  UnsafeMkNatural x == UnsafeMkNatural y = x == y
+
+instance FromJSON Natural where
+  parseJSON v = do
+    i <- parseJSON v
+    if i < 0 then parseFail "Natural less than 0" else Hask.pure (UnsafeMkNatural i)
+
+instance Enum Natural where
+  {-# INLINEABLE toEnum #-}
+  toEnum x
+    | x < 0 = error ()
+    | otherwise = UnsafeMkNatural x
+  {-# INLINEABLE fromEnum #-}
+  fromEnum (UnsafeMkNatural x) = x
+  {-# INLINEABLE succ #-}
+  succ (UnsafeMkNatural x) = UnsafeMkNatural $ succ x
+  {-# INLINEABLE pred #-}
+  pred (UnsafeMkNatural x) = if x == 0 then error () else UnsafeMkNatural $ pred x
+
+instance PlutusTx.ToData Natural where
+  {-# INLINEABLE toBuiltinData #-}
+  toBuiltinData (UnsafeMkNatural x) = toBuiltinData x
+
+instance PlutusTx.FromData Natural where
+  {-# INLINEABLE fromBuiltinData #-}
+  fromBuiltinData bData =
+    fromBuiltinData bData >>= (\x -> if x < 0 then Nothing else Just $ UnsafeMkNatural x)
+
+instance PlutusTx.UnsafeFromData Natural where
+  {-# INLINEABLE PlutusTx.unsafeFromBuiltinData #-}
+  unsafeFromBuiltinData bData = toEnum $ unsafeFromBuiltinData bData
 
 -- | Parameters that need to be submitted when minting a new NFT.
 data MintParams = MintParams

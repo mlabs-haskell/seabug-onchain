@@ -40,10 +40,10 @@ import Ledger.Value qualified as Value
 import Plutus.V1.Ledger.Scripts qualified as Plutus
 import PlutusTx qualified
 import PlutusTx.AssocMap qualified as Map
-import PlutusTx.Natural (Natural)
 import PlutusTx.Prelude
 import SeabugOnchain.Types (
   MintAct (..),
+  Natural,
   NftCollection (..),
   NftId,
   hash,

@@ -33,15 +33,12 @@ common common-imports
     , plutus-chain-index-core
     , plutus-contract
     , plutus-core
-    , plutus-extra
     , plutus-ledger
     , plutus-ledger-api
     , plutus-ledger-constraints
-    , plutus-numeric
     , plutus-pab
     , plutus-tx
     , plutus-tx-plugin
-    , plutus-tx-spooky
     , plutus-use-cases
     , pretty-show
     , prettyprinter
@@ -92,8 +89,10 @@ common common-configs
 
 common common-ghc-options
   ghc-options:
+    -Wall -Wcompat -Wincomplete-record-updates
+    -Wincomplete-uni-patterns -Wredundant-constraints -fobject-code
     -fno-ignore-interface-pragmas -fno-omit-interface-pragmas
-    -fno-specialize -fno-strictness -fno-warn-orphans -fobject-code
+    -Wmissing-export-lists -Wmissing-deriving-strategies -Werror
     -fplugin-opt PlutusTx.Plugin:defer-errors
 
 library
@@ -108,19 +107,19 @@ library
   hs-source-dirs:  src/
   exposed-modules:
     SeabugOnchain.Api
-    SeabugOnchain.Lock
     SeabugOnchain.Contract.Aux
-    SeabugOnchain.Contract.ChangeOwner
     SeabugOnchain.Contract.Burn
+    SeabugOnchain.Contract.ChangeOwner
+    SeabugOnchain.Contract.FeeWithdraw
     SeabugOnchain.Contract.MarketplaceBuy
     SeabugOnchain.Contract.MarketplaceDeposit
     SeabugOnchain.Contract.MarketplaceRedeem
     SeabugOnchain.Contract.MarketplaceSetPrice
     SeabugOnchain.Contract.Mint
     SeabugOnchain.Contract.SetPrice
-    SeabugOnchain.Contract.FeeWithdraw
-    SeabugOnchain.Marketplace
     SeabugOnchain.Dao
+    SeabugOnchain.Lock
+    SeabugOnchain.Marketplace
     SeabugOnchain.Token
     SeabugOnchain.Types
 
@@ -133,8 +132,8 @@ executable seabug-pab
   ghc-options:   -Wall -threaded -rtsopts
   build-depends:
     , bot-plutus-interface
-    , seabug-onchain
     , optparse-applicative
+    , seabug-onchain
     , servant-client-core
 
 test-suite seabug-onchain-tests
@@ -157,9 +156,9 @@ test-suite seabug-onchain-tests
     , freer-extras
     , freer-simple
     , lens
-    , seabug-onchain
     , mtl
     , playground-common
+    , plutip
     , plutus-contract
     , plutus-core
     , plutus-ledger
@@ -168,41 +167,40 @@ test-suite seabug-onchain-tests
     , plutus-pab
     , plutus-tx
     , plutus-tx-plugin
-    , plutus-tx-spooky
-    -- , plutus-simple-model
     , plutus-use-cases
-    -- , plutip
     , pretty-show
     , prettyprinter
     , QuickCheck
     , record-dot-preprocessor
     , record-hasfield
+    , seabug-onchain
     , tasty
     , tasty-expected-failure
     , tasty-hunit
-    , tasty-plutus
     , tasty-quickcheck
     , text
 
+  -- , plutus-simple-model
+  -- , plutip
   other-modules:
-    -- Test.Resources
-    Test.Script.TokenBurn
-    Test.Script.TokenChangeOwner
-    Test.Script.TokenChangePrice
-    Test.Script.TokenMint
-    Test.Script.TokenUnstake
-    Test.Script.TokenRestake
-    Test.Script.TokenMarketplaceSetPrice
-    Test.Script.TokenMarketplaceBuy
-    Test.Script.TokenMarketplaceRedeem
-    Test.Script.FeeWithdraw
-    Test.Script.Values
-    Test.Size
+    Test.Plutip
+    Test.Quickcheck
     Test.Trace
-    -- Test.Quickcheck
-    -- Test.Plutip
     Test.Utils
 
+  -- Test.Script.FeeWithdraw
+  -- Test.Script.TokenBurn
+  -- Test.Script.TokenChangeOwner
+  -- Test.Script.TokenChangePrice
+  -- Test.Script.TokenMarketplaceBuy
+  -- Test.Script.TokenMarketplaceRedeem
+  -- Test.Script.TokenMarketplaceSetPrice
+  -- Test.Script.TokenMint
+  -- Test.Script.TokenRestake
+  -- Test.Script.TokenUnstake
+  -- Test.Script.Values
+  -- Test.Size
+  -- Test.Resources
   default-extensions:
     OverloadedStrings
     QuasiQuotes

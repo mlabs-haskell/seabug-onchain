@@ -36,7 +36,6 @@ import Ledger.Typed.Scripts (Any, TypedValidator, unsafeMkTypedValidator, wrapVa
 import Ledger.Value (Value (getValue), valueOf)
 import PlutusTx qualified
 import PlutusTx.AssocMap qualified as AssocMap
-import PlutusTx.Natural (Natural)
 import PlutusTx.Prelude
 import SeabugOnchain.Token (mkTokenName)
 import SeabugOnchain.Types

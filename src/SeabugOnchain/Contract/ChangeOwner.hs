@@ -12,7 +12,6 @@ import Plutus.Contract qualified as Contract
 import Plutus.V1.Ledger.Ada (lovelaceValueOf)
 import Plutus.V1.Ledger.Api (ToData (toBuiltinData))
 import Plutus.V1.Ledger.Value (assetClass, singleton)
-import PlutusTx.Numeric.Extra (addExtend)
 import Text.Printf (printf)
 
 import SeabugOnchain.Contract.Aux
@@ -23,7 +22,7 @@ changeOwner :: ChangeOwnerParams -> UserContract ()
 changeOwner cp = do
   utxos <- getUserUtxos
   let collection = nftData'nftCollection . cp'nftData $ cp
-      policy' = policy collection
+      policy' = policyData collection
       curr = scriptCurrencySymbol policy'
       oldNft = nftData'nftId . cp'nftData $ cp
       newNft = oldNft {nftId'owner = cp'owner cp}
@@ -31,12 +30,12 @@ changeOwner cp = do
       newName = mkTokenName newNft
       oldNftValue = singleton curr oldName (-1)
       newNftValue = singleton curr newName 1
-      nftPrice = nftId'price oldNft
+      nftPrice = fromEnum $ nftId'price oldNft
       mintRedeemer = Redeemer . toBuiltinData $ ChangeOwner oldNft (cp'owner cp)
-      getShare share = lovelaceValueOf $ (addExtend nftPrice * 10000) `divide` share
-      authorShare = getShare (addExtend . nftCollection'authorShare $ collection)
-      daoShare = getShare (addExtend . nftCollection'daoShare $ collection)
-      ownerShare = lovelaceValueOf (addExtend nftPrice) - authorShare - daoShare
+      getShare share = lovelaceValueOf $ (nftPrice * 10000) `divide` share
+      authorShare = getShare (fromEnum $ nftCollection'authorShare collection)
+      daoShare = getShare (fromEnum $ nftCollection'daoShare collection)
+      ownerShare = lovelaceValueOf nftPrice - authorShare - daoShare
       datum = Datum . PlutusTx.toBuiltinData $ (curr, oldName)
       lookup =
         Hask.mconcat

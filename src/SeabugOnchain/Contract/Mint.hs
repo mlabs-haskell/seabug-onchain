@@ -36,7 +36,6 @@ import Text.Printf (printf)
 import SeabugOnchain.Contract.Aux (getUserUtxos)
 import SeabugOnchain.Dao (daoValidator)
 import SeabugOnchain.Lock (lockValidator)
-import SeabugOnchain.Marketplace
 import SeabugOnchain.Token (mkTokenName, policyData)
 import SeabugOnchain.Types
 
@@ -94,7 +93,6 @@ mintWithCollection (ac, mp) = do
           }
 
       meta = TxMetadata Nothing $ OtherFields $ Map.singleton "727" $ toJSON seabugMeta
-      valHash = validatorHash marketplaceValidator
       lookup =
         Hask.mconcat
           [ Constraints.mintingPolicy policy'
@@ -103,10 +101,7 @@ mintWithCollection (ac, mp) = do
       tx =
         Hask.mconcat
           [ Constraints.mustMintValueWithRedeemer mintRedeemer nftValue
-          , Constraints.mustPayToOtherScript
-              valHash
-              (Datum . toBuiltinData . MarketplaceDatum $ assetClass curr tn)
-              (nftValue <> toValue minAdaTxOut)
+          , Constraints.mustPayToPubKey pkh (nftValue <> toValue minAdaTxOut)
           , Constraints.mustPayToOtherScript
               (nftCollection'lockingScript collection)
               (Datum $ toBuiltinData $ LockDatum curr currSlot (snd $ unAssetClass ac))
