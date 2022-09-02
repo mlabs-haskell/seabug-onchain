@@ -493,6 +493,31 @@
         "type": "github"
       }
     },
+    "haskell-nix-extra-hackage": {
+      "inputs": {
+        "haskell-nix": [
+          "plutus-simple-model",
+          "haskell-nix"
+        ],
+        "nixpkgs": [
+          "plutus-simple-model",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1658790167,
+        "narHash": "sha256-QRZCAz/k5hEvXiHc2aVDDc2jgPTeiRXUtARg0GA9rDU=",
+        "owner": "mlabs-haskell",
+        "repo": "haskell-nix-extra-hackage",
+        "rev": "ee50d7eb739819efdb27bda9f444e007c12e9833",
+        "type": "github"
+      },
+      "original": {
+        "owner": "mlabs-haskell",
+        "repo": "haskell-nix-extra-hackage",
+        "type": "github"
+      }
+    },
     "hedgehog-extras": {
       "flake": false,
       "locked": {
@@ -903,6 +928,82 @@
         "type": "github"
       }
     },
+    "plutus-simple-model": {
+      "inputs": {
+        "Win32-network": [
+          "plutip",
+          "bot-plutus-interface",
+          "Win32-network"
+        ],
+        "cardano-base": [
+          "plutip",
+          "bot-plutus-interface",
+          "cardano-base"
+        ],
+        "cardano-crypto": [
+          "plutip",
+          "bot-plutus-interface",
+          "cardano-crypto"
+        ],
+        "cardano-ledger": [
+          "plutip",
+          "bot-plutus-interface",
+          "cardano-ledger"
+        ],
+        "cardano-prelude": [
+          "plutip",
+          "bot-plutus-interface",
+          "cardano-prelude"
+        ],
+        "flat": [
+          "plutip",
+          "bot-plutus-interface",
+          "flat"
+        ],
+        "goblins": [
+          "plutip",
+          "bot-plutus-interface",
+          "goblins"
+        ],
+        "haskell-nix": [
+          "plutip",
+          "bot-plutus-interface",
+          "haskell-nix"
+        ],
+        "haskell-nix-extra-hackage": "haskell-nix-extra-hackage",
+        "iohk-nix": [
+          "plutip",
+          "bot-plutus-interface",
+          "iohk-nix"
+        ],
+        "nixpkgs": [
+          "plutip",
+          "bot-plutus-interface",
+          "haskell-nix",
+          "nixpkgs"
+        ],
+        "plutus": [
+          "plutip",
+          "bot-plutus-interface",
+          "plutus"
+        ],
+        "weigh": "weigh"
+      },
+      "locked": {
+        "lastModified": 1662126104,
+        "narHash": "sha256-ZSy1bsszLIn6yb+UP/GQebygZXP965BBk4Cm2bCfgwk=",
+        "owner": "mlabs-haskell",
+        "repo": "plutus-simple-model",
+        "rev": "7fc585911fff424d9bfe9e5905837f7546fcba89",
+        "type": "github"
+      },
+      "original": {
+        "owner": "mlabs-haskell",
+        "repo": "plutus-simple-model",
+        "rev": "7fc585911fff424d9bfe9e5905837f7546fcba89",
+        "type": "github"
+      }
+    },
     "purescript-bridge": {
       "flake": false,
       "locked": {
@@ -956,7 +1057,8 @@
           "haskell-nix",
           "nixpkgs"
         ],
-        "plutip": "plutip"
+        "plutip": "plutip",
+        "plutus-simple-model": "plutus-simple-model"
       }
     },
     "servant-purescript": {
@@ -1006,6 +1108,23 @@
         "owner": "input-output-hk",
         "repo": "typed-protocols",
         "rev": "181601bc3d9e9d21a671ce01e0b481348b3ca104",
+        "type": "github"
+      }
+    },
+    "weigh": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1591611199,
+        "narHash": "sha256-ZgWqA3HLsyiut7/gE8Qtb/4YWj7c2ObHiVhNg5cl3gU=",
+        "owner": "fpco",
+        "repo": "weigh",
+        "rev": "bfcf4415144d7d2817dfcb91b6f9a6dfd7236de7",
+        "type": "github"
+      },
+      "original": {
+        "owner": "fpco",
+        "repo": "weigh",
+        "rev": "bfcf4415144d7d2817dfcb91b6f9a6dfd7236de7",
         "type": "github"
       }
     }

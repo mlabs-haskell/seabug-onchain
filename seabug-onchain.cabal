@@ -124,18 +124,18 @@ library
     SeabugOnchain.Token
     SeabugOnchain.Types
 
-executable seabug-pab
-  import:        common-imports
-  import:        common-language
-  import:        common-configs
-  import:        common-ghc-options
-  main-is:       app/Main.hs
-  ghc-options:   -Wall -threaded -rtsopts
-  build-depends:
-    , bot-plutus-interface
-    , optparse-applicative
-    , seabug-onchain
-    , servant-client-core
+-- executable seabug-pab
+--   import:        common-imports
+--   import:        common-language
+--   import:        common-configs
+--   import:        common-ghc-options
+--   main-is:       app/Main.hs
+--   ghc-options:   -Wall -threaded -rtsopts
+--   build-depends:
+--     , bot-plutus-interface
+--     , optparse-applicative
+--     , seabug-onchain
+--     , servant-client-core
 
 test-suite seabug-onchain-tests
   import:             common-imports
@@ -166,6 +166,7 @@ test-suite seabug-onchain-tests
     , plutus-ledger-api
     , plutus-ledger-constraints
     , plutus-pab
+    , plutus-simple-model
     , plutus-tx
     , plutus-tx-plugin
     , plutus-use-cases
@@ -181,11 +182,11 @@ test-suite seabug-onchain-tests
     , tasty-quickcheck
     , text
 
-  -- , plutus-simple-model
   -- , plutip
   other-modules:
     Test.Plutip
     Test.Quickcheck
+    Test.Resources
     Test.Trace
     Test.Utils
 
@@ -201,7 +202,6 @@ test-suite seabug-onchain-tests
   -- Test.Script.TokenUnstake
   -- Test.Script.Values
   -- Test.Size
-  -- Test.Resources
   default-extensions:
     OverloadedStrings
     QuasiQuotes

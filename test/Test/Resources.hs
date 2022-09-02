@@ -5,6 +5,7 @@ import Prelude hiding (fromEnum, toEnum)
 import Control.Monad (void, (<=<))
 import Control.Monad.State.Strict (modify)
 import Data.Default (def)
+import Data.Kind (Type)
 import Data.List (find)
 import Data.Maybe (fromJust)
 import Ledger (
@@ -14,50 +15,54 @@ import Ledger (
   PaymentPubKeyHash (PaymentPubKeyHash),
   PubKeyHash,
   UpperBound (UpperBound),
+  Validator (Validator),
   minAdaTxOut,
   scriptCurrencySymbol,
-  txOutValue,
   unPaymentPubKeyHash,
+  unValidatorScript,
  )
-import Ledger.TimeSlot (slotToBeginPOSIXTime)
-import Ledger.Typed.Scripts (validatorHash)
+import Ledger.Ada (getLovelace, lovelaceValueOf, toValue)
+import Ledger.Typed.Scripts (Any, tvValidator, validatorHash)
+import Ledger.Typed.Scripts qualified as P
 import Ledger.Value (Value, assetClass, singleton, unAssetClass, valueOf)
-import Plutus.Test.Model (
-  BchConfig,
+import Plutus.Model (
+  DatumMode (HashDatum),
   FakeCoin (FakeCoin),
+  MockConfig,
   Run,
-  addMintRedeemer,
-  bchConfig,
-  bchConfigSlotConfig,
-  currentSlot,
+  TypedPolicy (TypedPolicy),
+  TypedValidator (TypedValidator),
+  TypedValidatorHash (TypedValidatorHash),
+  boxAt,
+  currentTime,
   fakeCoin,
   fakeValue,
   filterSlot,
-  logError,
   mintValue,
+  mockConfig,
+  mockConfigSlotConfig,
   newUser,
-  payToPubKey,
+  payToKey,
+  payToKeyDatum,
   payToScript,
-  payToScriptHash,
-  payWithDatumToPubKey,
-  scriptBoxAt,
   sendTx,
   signTx,
   spend,
   spendBox,
   testLimits,
+  toV1,
   txBoxOut,
   userSpend,
   validateIn,
  )
-import Plutus.V1.Ledger.Ada (getLovelace, lovelaceValueOf, toValue)
-import Plutus.V1.Ledger.Api (toBuiltinData)
+import Plutus.V1.Ledger.Api (BuiltinData, toBuiltinData)
+import Plutus.V2.Ledger.Api (txOutValue)
 import PlutusTx.Enum (fromEnum, toEnum)
 import PlutusTx.Prelude (divide)
 import SeabugOnchain.Dao (daoValidator)
 import SeabugOnchain.Lock (lockValidator)
 import SeabugOnchain.Marketplace (marketplaceValidator)
-import SeabugOnchain.Token (mkTokenName, policy)
+import SeabugOnchain.Token (mkTokenName, policyData)
 import SeabugOnchain.Types (
   LockAct (Unstake),
   LockDatum (LockDatum),
@@ -82,7 +87,7 @@ import SeabugOnchain.Types (
  )
 import Test.Tasty (TestTree, testGroup)
 
-test :: BchConfig -> TestTree
+test :: MockConfig -> TestTree
 test cfg =
   testGroup
     "Resources usage"
@@ -105,10 +110,19 @@ cnftCoinA = FakeCoin "aa"
 initFunds :: Value
 initFunds = mconcat [lovelaceValueOf 300_000_000, fakeValue cnftCoinA 1]
 
+psmTypedValidator ::
+  forall (datum :: Type) (redeemer :: Type).
+  P.TypedValidator Any ->
+  TypedValidator datum redeemer
+psmTypedValidator = TypedValidator . toV1 . Validator . unValidatorScript . tvValidator
+
+marketplaceValidator' :: TypedValidator MarketplaceDatum BuiltinData
+marketplaceValidator' = psmTypedValidator marketplaceValidator
+
 seabugActions :: Run ()
 seabugActions = do
   -- Use the same slot config as is used onchain
-  modify (\bch -> bch {bchConfig = (bchConfig bch) {bchConfigSlotConfig = def}})
+  modify (\mock -> mock {mockConfig = (mockConfig mock) {mockConfigSlotConfig = def}})
 
   w1 <- newUser $ lovelaceValueOf 100_000_000 <> fakeValue cnftCoinA 1
   w2 <- newUser $ lovelaceValueOf 100_000_000
@@ -126,68 +140,69 @@ seabugActions = do
 
 feeWithdraw :: PubKeyHash -> [PubKeyHash] -> Run ()
 feeWithdraw pkh vaultKeys = do
-  boxes <- scriptBoxAt daoValidator'
+  boxes <- boxAt daoValidator'
   let feeValue = foldMap (txOutValue . txBoxOut) boxes
   void
     . (sendTx <=< signTx pkh)
     . mconcat
-    $ payToPubKey pkh feeValue :
+    $ payToKey pkh feeValue :
     fmap (spendBox daoValidator' (toBuiltinData ())) boxes
   where
-    daoValidator' = daoValidator vaultKeys
+    daoValidator' :: TypedValidator BuiltinData BuiltinData
+    daoValidator' = psmTypedValidator $ daoValidator vaultKeys
 
 unstake :: NftData -> Run ()
 unstake nftData = do
-  box <- fromJust . find findCnft <$> scriptBoxAt lockValidator'
+  box <- fromJust . find findCnft <$> boxAt lockValidator'
   utxos <- spend owner (singleton nftCS nftTN 1)
-  now <- slotToBeginPOSIXTime def <$> currentSlot
+  now <- currentTime
   void
     . (sendTx <=< signTx owner <=< validateIn (range now))
-    . addMintRedeemer policy' redeemer
     . mconcat
-    $ [ spendBox lockValidator' (toBuiltinData $ Unstake (PaymentPubKeyHash owner) (nftId'price nft)) box
-      , mintValue policy' nftVal
+    $ [ spendBox lockValidator' (Unstake (PaymentPubKeyHash owner) (nftId'price nft)) box
+      , mintValue policy' redeemer nftVal
       , userSpend utxos
-      , payToPubKey owner $ singleton cnftCS cnftTN 1 <> toValue minAdaTxOut
+      , payToKey owner $ singleton cnftCS cnftTN 1 <> toValue minAdaTxOut
       ]
   where
     findCnft box = valueOf (txOutValue . txBoxOut $ box) cnftCS cnftTN == 1
     redeemer = BurnToken nft
-    policy' = policy collection
+    policy = policyData collection
+    policy' = TypedPolicy $ toV1 $ policyData collection
     owner = unPaymentPubKeyHash . nftId'owner $ nft
-    nftCS = scriptCurrencySymbol policy'
+    nftCS = scriptCurrencySymbol policy
     nft = nftData'nftId nftData
     collection = nftData'nftCollection nftData
     nftTN = mkTokenName nft
     nftVal = singleton nftCS nftTN (-1)
     cnftCS = nftCollection'collectionNftCs collection
     cnftTN = nftId'collectionNftTn nft
-    lockValidator' = lockValidator cnftCS 5 5
+    lockValidator' :: TypedValidator LockDatum LockAct
+    lockValidator' = psmTypedValidator $ lockValidator cnftCS 5 5
     range now = Interval (LowerBound (Finite now) True) (UpperBound PosInf False)
 
 marketplaceBuy :: PubKeyHash -> NftData -> Run NftData
 marketplaceBuy newOwner nftData = do
-  box <- fromJust . find findNft <$> scriptBoxAt marketplaceValidator
+  box <- fromJust . find findNft <$> boxAt marketplaceValidator'
   utxos <- spend newOwner (lovelaceValueOf . fromEnum . nftId'price . nftData'nftId $ nftData)
   void
     . (sendTx <=< signTx newOwner)
-    . addMintRedeemer policy' redeemer
     . mconcat
-    $ [ mintValue policy' (newNftVal <> oldNftVal)
+    $ [ mintValue policy'' redeemer (newNftVal <> oldNftVal)
       , payToScript
-          marketplaceValidator
-          (toBuiltinData . MarketplaceDatum $ assetClass nftCS newNftTN)
+          marketplaceValidator'
+          (HashDatum $ MarketplaceDatum $ assetClass nftCS newNftTN)
           (newNftVal <> toValue minAdaTxOut)
-      , spendBox marketplaceValidator (toBuiltinData ()) box
-      , payWithDatumToPubKey oldOwner datum (lovelaceValueOf ownerShare)
+      , spendBox marketplaceValidator' (toBuiltinData ()) box
+      , payToKeyDatum oldOwner (HashDatum datum) (lovelaceValueOf ownerShare)
       , userSpend utxos
       ]
       <> filterLowValue
         authorShare
-        (payWithDatumToPubKey authorPkh datum (lovelaceValueOf authorShare))
+        (payToKeyDatum authorPkh (HashDatum datum) (lovelaceValueOf authorShare))
       <> filterLowValue
         daoShare
-        (payToScriptHash daoHash datum (lovelaceValueOf daoShare))
+        (payToScript daoHash (HashDatum datum) (lovelaceValueOf daoShare))
   pure $ NftData (nftData'nftCollection nftData) newNft
   where
     filterLowValue v t
@@ -199,7 +214,8 @@ marketplaceBuy newOwner nftData = do
     datum = toBuiltinData (nftCS, oldNftTN)
     findNft box = valueOf (txOutValue . txBoxOut $ box) nftCS oldNftTN == 1
     redeemer = ChangeOwner oldNft (PaymentPubKeyHash newOwner)
-    policy' = policy (nftData'nftCollection nftData)
+    policy' = policyData (nftData'nftCollection nftData)
+    policy'' = TypedPolicy $ toV1 policy'
     nftCS = scriptCurrencySymbol policy'
     oldNft = nftData'nftId nftData
     oldNftTN = mkTokenName oldNft
@@ -214,27 +230,27 @@ marketplaceBuy newOwner nftData = do
       | otherwise = x
     ownerShare = oldPrice - filterLow daoShare - filterLow authorShare
     authorPkh = unPaymentPubKeyHash . nftCollection'author . nftData'nftCollection $ nftData
-    daoHash = nftCollection'daoScript . nftData'nftCollection $ nftData
+    daoHash = TypedValidatorHash . toV1 . nftCollection'daoScript . nftData'nftCollection $ nftData
 
 marketplaceChangePrice :: Integer -> NftData -> Run NftData
 marketplaceChangePrice newPrice nftData = do
-  box <- fromJust . find findNft <$> scriptBoxAt marketplaceValidator
+  box <- fromJust . find findNft <$> boxAt marketplaceValidator'
   void
     . (sendTx <=< signTx owner)
-    . addMintRedeemer policy' redeemer
     . mconcat
-    $ [ mintValue policy' (newNftVal <> oldNftVal)
+    $ [ mintValue policy'' redeemer (newNftVal <> oldNftVal)
       , payToScript
-          marketplaceValidator
-          (toBuiltinData . MarketplaceDatum $ assetClass nftCS newNftTN)
+          marketplaceValidator'
+          (HashDatum $ MarketplaceDatum $ assetClass nftCS newNftTN)
           (newNftVal <> toValue minAdaTxOut)
-      , spendBox marketplaceValidator (toBuiltinData ()) box
+      , spendBox marketplaceValidator' (toBuiltinData ()) box
       ]
   pure $ NftData (nftData'nftCollection nftData) newNft
   where
     findNft box = valueOf (txOutValue . txBoxOut $ box) nftCS oldNftTN == 1
     redeemer = ChangePrice oldNft (toEnum newPrice)
-    policy' = policy (nftData'nftCollection nftData)
+    policy' = policyData (nftData'nftCollection nftData)
+    policy'' = TypedPolicy $ toV1 policy'
     nftCS = scriptCurrencySymbol policy'
     oldNft = nftData'nftId nftData
     oldNftTN = mkTokenName oldNft
@@ -246,20 +262,20 @@ marketplaceChangePrice newPrice nftData = do
 
 marketplaceRedeem :: NftData -> Run NftData
 marketplaceRedeem nftData = do
-  box <- fromJust . find findNft <$> scriptBoxAt marketplaceValidator
+  box <- fromJust . find findNft <$> boxAt marketplaceValidator'
   void
     . (sendTx <=< signTx owner)
-    . addMintRedeemer policy' redeemer
     . mconcat
-    $ [ mintValue policy' (newNftVal <> oldNftVal)
-      , payToPubKey owner (newNftVal <> toValue minAdaTxOut)
-      , spendBox marketplaceValidator (toBuiltinData ()) box
+    $ [ mintValue policy'' redeemer (newNftVal <> oldNftVal)
+      , payToKey owner (newNftVal <> toValue minAdaTxOut)
+      , spendBox marketplaceValidator' (toBuiltinData ()) box
       ]
   pure $ NftData (nftData'nftCollection nftData) newNft
   where
     findNft box = valueOf (txOutValue . txBoxOut $ box) nftCS oldNftTN == 1
     redeemer = ChangePrice oldNft (toEnum newPrice)
-    policy' = policy (nftData'nftCollection nftData)
+    policy' = policyData (nftData'nftCollection nftData)
+    policy'' = TypedPolicy $ toV1 policy'
     nftCS = scriptCurrencySymbol policy'
     oldNft = nftData'nftId nftData
     oldNftTN = mkTokenName oldNft
@@ -277,14 +293,14 @@ marketplaceDeposit nftData = do
     . (sendTx <=< signTx owner)
     . mconcat
     $ [ payToScript
-          marketplaceValidator
-          (toBuiltinData . MarketplaceDatum $ assetClass nftCS nftTN)
+          marketplaceValidator'
+          (HashDatum $ MarketplaceDatum $ assetClass nftCS nftTN)
           (nftVal <> toValue minAdaTxOut)
       , userSpend utxos
       ]
   pure nftData
   where
-    policy' = policy (nftData'nftCollection nftData)
+    policy' = policyData (nftData'nftCollection nftData)
     nftTN = mkTokenName . nftData'nftId $ nftData
     nftCS = scriptCurrencySymbol policy'
     nftVal = singleton nftCS nftTN 1
@@ -295,16 +311,16 @@ changePrice newPrice nftData = do
   utxos <- spend owner (singleton nftCS oldNftTN 1 <> toValue minAdaTxOut)
   void
     . (sendTx <=< signTx owner)
-    . addMintRedeemer policy' redeemer
     . mconcat
-    $ [ mintValue policy' (newNftVal <> oldNftVal)
-      , payToPubKey owner (newNftVal <> toValue minAdaTxOut)
+    $ [ mintValue policy'' redeemer (newNftVal <> oldNftVal)
+      , payToKey owner (newNftVal <> toValue minAdaTxOut)
       , userSpend utxos
       ]
   pure $ NftData (nftData'nftCollection nftData) newNft
   where
     redeemer = ChangePrice oldNft (toEnum newPrice)
-    policy' = policy (nftData'nftCollection nftData)
+    policy' = policyData (nftData'nftCollection nftData)
+    policy'' = TypedPolicy $ toV1 policy'
     nftCS = scriptCurrencySymbol policy'
     oldNft = nftData'nftId nftData
     oldNftTN = mkTokenName oldNft
@@ -319,17 +335,18 @@ mint pkh vaultKeys cnftCoin price = do
   utxos <- spend pkh (cnftVal <> toValue minAdaTxOut)
   void
     . (sendTx <=< signTx pkh)
-    . addMintRedeemer policy' redeemer
     . mconcat
-    $ [ mintValue policy' nftVal
-      , payToScript lockScript (toBuiltinData $ LockDatum nftCS 0 cnftTN) cnftVal
-      , payToPubKey pkh (nftVal <> toValue minAdaTxOut)
+    $ [ mintValue policy'' redeemer nftVal
+      , payToScript lockScript' (HashDatum $ LockDatum nftCS 0 cnftTN) cnftVal
+      , payToKey pkh (nftVal <> toValue minAdaTxOut)
       , userSpend utxos
       ]
   pure $ NftData collection nft
   where
     redeemer = MintToken nft
     lockScript = lockValidator cnftCS 5 5
+    lockScript' :: TypedValidator LockDatum LockAct
+    lockScript' = psmTypedValidator lockScript
     daoHash = validatorHash $ daoValidator vaultKeys
     collection =
       NftCollection
@@ -342,7 +359,8 @@ mint pkh vaultKeys cnftCoin price = do
         , nftCollection'daoScript = daoHash
         , nftCollection'daoShare = toEnum 10_00
         }
-    policy' = policy collection
+    policy' = policyData collection
+    policy'' = TypedPolicy $ toV1 policy'
     nft = NftId cnftTN (toEnum price) (PaymentPubKeyHash pkh)
     nftTN = mkTokenName nft
     nftCS = scriptCurrencySymbol policy'

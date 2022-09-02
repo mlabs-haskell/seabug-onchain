@@ -13,6 +13,26 @@
     };
     plutip.url =
       "github:mlabs-haskell/plutip?rev=ae394a66a1acb19f6a3c0efe6548d3f25122dd7b";
+
+    plutus-simple-model = {
+      url =
+        # Branch: seabug/update-plutus-apps
+        "github:mlabs-haskell/plutus-simple-model?rev=7fc585911fff424d9bfe9e5905837f7546fcba89";
+      inputs = {
+        haskell-nix.follows = "plutip/bot-plutus-interface/haskell-nix";
+        nixpkgs.follows = "plutip/bot-plutus-interface/haskell-nix/nixpkgs";
+        iohk-nix.follows = "plutip/bot-plutus-interface/iohk-nix";
+
+        cardano-base.follows = "plutip/bot-plutus-interface/cardano-base";
+        cardano-crypto.follows = "plutip/bot-plutus-interface/cardano-crypto";
+        cardano-ledger.follows = "plutip/bot-plutus-interface/cardano-ledger";
+        cardano-prelude.follows = "plutip/bot-plutus-interface/cardano-prelude";
+        flat.follows = "plutip/bot-plutus-interface/flat";
+        goblins.follows = "plutip/bot-plutus-interface/goblins";
+        plutus.follows = "plutip/bot-plutus-interface/plutus";
+        Win32-network.follows = "plutip/bot-plutus-interface/Win32-network";
+      };
+    };
   };
 
   outputs = { self, plutip, nixpkgs, haskell-nix, iohk-nix, ... }@inputs:
@@ -38,10 +58,16 @@
         })
       ];
 
-      extraSources = inputs.plutip.extraSources ++ [{
-        src = inputs.plutip;
-        subdirs = [ "." ];
-      }];
+      extraSources = inputs.plutip.extraSources ++ [
+        {
+          src = inputs.plutip;
+          subdirs = [ "." ];
+        }
+        {
+          src = inputs.plutus-simple-model;
+          subdirs = [ "." ];
+        }
+      ];
 
       projectFor = system:
         let
@@ -56,6 +82,7 @@
                 [
                   ps.plutus-pab
                   ps.bot-plutus-interface
+                  ps.plutus-simple-model
                   ps.plutus-use-cases
                   ps.plutip
                 ];
@@ -78,9 +105,16 @@
             };
             inherit (plutip) cabalProjectLocal;
             inherit extraSources;
-            modules = haskellModules;
+            modules = haskellModules ++ [
+              ({ config, ... }: {
+                packages = {
+                  plutus-simple-model.doHaddock = false;
+                };
+              })
+            ];
           };
-        in project;
+        in
+        project;
 
       formatCheckFor = system:
         let

@@ -6,10 +6,14 @@ import Prelude (IO)
 -- import Plutus.Test.Model (readDefaultBchConfig)
 import Test.Tasty (defaultMain, testGroup)
 
-import Test.Plutip qualified as Plutip
+-- import Test.Plutip qualified as Plutip
+
+import Plutus.Model (defaultMockConfig)
+import Plutus.Model.Mock.ProtocolParameters (defaultAlonzoParams)
+import Test.Resources qualified as Resources
+
 -- import Test.Quickcheck qualified as Quickcheck
 
--- import Test.Resources qualified as Resources
 -- import Test.Script.FeeWithdraw qualified as FeeWithdraw
 -- import Test.Script.TokenBurn qualified as TokenBurn
 -- import Test.Script.TokenChangeOwner qualified as TokenChangeOwner
@@ -24,12 +28,10 @@ import Test.Plutip qualified as Plutip
 
 main :: IO ()
 main = do
-  -- cfg <- readDefaultBchConfig
   defaultMain $
     testGroup
       "Seabug Onchain"
       -- [ Size.test
-      -- , Resources.test cfg
       -- , testGroup
       --     "Token"
       --     [ TokenMint.test
@@ -50,5 +52,6 @@ main = do
       --     ]
       -- , FeeWithdraw.test
       -- [ Quickcheck.test
-      [ Plutip.test
+      [ --Plutip.test
+        Resources.test $ defaultMockConfig defaultAlonzoParams
       ]
