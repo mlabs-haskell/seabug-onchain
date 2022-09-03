@@ -2,10 +2,12 @@ module SeabugOnchain.Contract.Mint (mint, mintWithCollection, generateNft) where
 
 import PlutusTx.Prelude (
   Bool (False, True),
+  Integer,
   Maybe (Nothing),
   Semigroup ((<>)),
   fromMaybe,
   fst,
+  pure,
   return,
   snd,
   ($),
@@ -15,32 +17,26 @@ import Prelude qualified as Hask
 
 import Control.Monad (void)
 
--- import Data.Aeson (toJSON)
-
--- import Data.Map qualified as Map
-import Data.Text (pack)
+import Data.Map qualified as Map
 import Data.Void (Void)
 
--- import Ledger (Datum (Datum), MintingPolicy (getMintingPolicy), Redeemer (Redeemer), minAdaTxOut, scriptHash, unPaymentPubKeyHash, scriptCurrencySymbol)
-import Ledger (Datum (Datum), Redeemer (Redeemer), minAdaTxOut, scriptCurrencySymbol)
-import Ledger.Constraints qualified as Constraints
-
--- import Ledger.Constraints.Metadata (OtherFields (OtherFields), TxMetadata (TxMetadata))
-
+import Ledger (Datum (Datum), Redeemer (Redeemer), TxOutRef (TxOutRef), getCardanoTxId, minAdaTxOut, scriptCurrencySymbol)
 import Ledger.Ada (toValue)
+import Ledger.Constraints qualified as Constraints
 import Ledger.Typed.Scripts (validatorHash)
+import Ledger.Typed.Scripts qualified as Scripts
+import Plutus.Contract
 import Plutus.Contract qualified as Contract
-import Plutus.Contracts.Currency (CurrencyError, mintContract)
-import Plutus.Contracts.Currency qualified as MC
+import Plutus.Contracts.Currency hiding (mintContract)
 import Plutus.V1.Ledger.Api (Extended (Finite, PosInf), Interval (Interval), LowerBound (LowerBound), ToData (toBuiltinData), TokenName (TokenName), UpperBound (UpperBound))
 import Plutus.V1.Ledger.Value (AssetClass, assetClass, assetClassValue, singleton, unAssetClass)
-import Text.Printf (printf)
-
-import SeabugOnchain.Contract.Aux (getUserUtxos)
+import PlutusTx.AssocMap qualified as AssocMap
+import SeabugOnchain.Contract.Aux (getFirstUtxo, getUserUtxos)
 import SeabugOnchain.Dao (daoValidator)
 import SeabugOnchain.Lock (lockValidator)
 import SeabugOnchain.Token (mkTokenName, policyData)
 import SeabugOnchain.Types
+import Text.Printf (printf)
 
 mint :: MintParams -> UserContract NftData
 mint mp = do
@@ -49,9 +45,13 @@ mint mp = do
 
 mintWithCollection :: (AssetClass, MintParams) -> UserContract NftData
 mintWithCollection (ac, mp) = do
+  Contract.logError @Hask.String "Before pkh"
   pkh <- Contract.ownFirstPaymentPubKeyHash
+  Contract.logError @Hask.String "Before utxos"
   utxos <- getUserUtxos
+  Contract.logError @Hask.String "Before currslot"
   currSlot <- Contract.currentPABSlot
+  Contract.logError @Hask.String "Before now"
   now <- Contract.currentTime
   Contract.logInfo @Hask.String $ printf "Curr slot: %s" (Hask.show currSlot)
   let owner = fromMaybe (pkh, Nothing) (mp'owner mp)
@@ -113,8 +113,9 @@ mintWithCollection (ac, mp) = do
               Interval
                 (LowerBound (Finite now) True)
                 (UpperBound PosInf False)
-          -- , Constraints.mustIncludeMetadata meta
+                -- , Constraints.mustIncludeMetadata meta
           ]
+  Contract.logError @Hask.String "Before submitTx"
   void $ Contract.submitTxConstraintsWith @Void lookup tx
   Contract.tell . Hask.pure $ nftData
   Contract.logInfo @Hask.String $ Hask.show nft
@@ -123,10 +124,33 @@ mintWithCollection (ac, mp) = do
 
 generateNft :: UserContract AssetClass
 generateNft = do
-  self <- Contract.ownFirstPaymentPubKeyHash
   let tn = TokenName "NFT"
-  x <-
-    Contract.mapError
-      (pack . Hask.show @CurrencyError)
-      (mintContract self [(tn, 1)])
-  return $ assetClass (MC.currencySymbol x) tn
+  Contract.logError @Hask.String "Before mintContract"
+  x <- mintContract [(tn, 1)]
+  return $ assetClass (currencySymbol x) tn
+
+mintContract ::
+  [(TokenName, Integer)] ->
+  UserContract OneShotCurrency
+mintContract amounts = do
+  utxos <- getUserUtxos
+  Contract.logError @Hask.String $ Hask.show utxos
+  utxo <- getFirstUtxo
+  let theCurrency = mkCurrency (fst utxo) amounts
+      curVali = curPolicy theCurrency
+      lookups =
+        Constraints.plutusV1MintingPolicy curVali
+          Hask.<> Constraints.unspentOutputs (Map.insert (fst utxo) (snd utxo) utxos)
+      mintTx =
+        Constraints.mustSpendPubKeyOutput (fst utxo)
+          Hask.<> Constraints.mustMintValue (mintedValue theCurrency)
+  tx <- submitTxConstraintsWith @Scripts.Any lookups mintTx
+  _ <- awaitTxConfirmed (getCardanoTxId tx)
+  pure theCurrency
+
+mkCurrency :: TxOutRef -> [(TokenName, Integer)] -> OneShotCurrency
+mkCurrency (TxOutRef h i) amts =
+  OneShotCurrency
+    { curRefTransactionOutput = (h, i)
+    , curAmounts = AssocMap.fromList amts
+    }

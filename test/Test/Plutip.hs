@@ -3,23 +3,19 @@
 
 module Test.Plutip (test) where
 
+import Control.Monad (void)
 import Control.Monad.Reader (ReaderT)
-import Data.List.NonEmpty (NonEmpty)
+import Data.Bifunctor (second)
 import Data.Kind (Type)
+import Data.List.NonEmpty (NonEmpty)
 import Data.Monoid (Last)
 import Data.Semigroup (stimes)
 import Data.Text (Text)
+import Debug.Trace (traceShowId)
 import Ledger (PaymentPubKeyHash (unPaymentPubKeyHash), Value)
 import Plutus.Contract (waitNSlots)
+import Plutus.Contract qualified as Contract
 import PlutusTx.Prelude (toEnum)
-import Test.Plutip.Contract (TestWallets, assertExecution, initAda, withContractAs)
-import Test.Plutip.Internal.Types (ClusterEnv, ExecutionResult (outcome), FailureReason)
-import Test.Plutip.LocalCluster (BpiWallet, withCluster)
-import Test.Plutip.Predicate (shouldFail, shouldSucceed)
-import Test.Tasty (TestTree)
-import Prelude hiding (toEnum)
-
-import Control.Monad (void)
 import SeabugOnchain.Contract.Burn (burn)
 import SeabugOnchain.Contract.FeeWithdraw (feeWithdraw)
 import SeabugOnchain.Contract.MarketplaceBuy (marketplaceBuy)
@@ -29,9 +25,12 @@ import SeabugOnchain.Contract.MarketplaceSetPrice (marketplaceSetPrice)
 import SeabugOnchain.Contract.Mint (generateNft, mintWithCollection)
 import SeabugOnchain.Contract.SetPrice (setPrice)
 import SeabugOnchain.Types (MintParams (MintParams), NftData, SetPriceParams (SetPriceParams))
-
-import Debug.Trace
-import Data.Bifunctor (second)
+import Test.Plutip.Contract (TestWallets, assertExecution, initAda, withContractAs)
+import Test.Plutip.Internal.Types (ClusterEnv, ExecutionResult (outcome), FailureReason)
+import Test.Plutip.LocalCluster (BpiWallet, withCluster)
+import Test.Plutip.Predicate (shouldFail, shouldSucceed)
+import Test.Tasty (TestTree)
+import Prelude hiding (toEnum)
 
 doubleUTxOAda :: Integer -> TestWallets
 doubleUTxOAda = flip stimes $ initAda [100, 5, 5, 5, 5]
@@ -57,6 +56,9 @@ testValid :: TestCase
 testValid = do
   (outcomeResult -> Right (nft3, pkhs)) <- withContractAs 0 $ \[_, pkh] -> do
     let pkhs = pure $ unPaymentPubKeyHash pkh
+
+    void $ waitNSlots 50
+
     cnft <- generateNft
     void $ waitNSlots 1
 
@@ -74,18 +76,23 @@ testValid = do
   void $
     withContractAs 1 $
       const $ do
+        Contract.logError @String "Before buy"
         nft4 <- marketplaceBuy nft3
         void $ waitNSlots 1
 
+        Contract.logError @String "Before mp set price"
         nft5 <- marketplaceSetPrice (SetPriceParams nft4 (toEnum 25_000_000))
         void $ waitNSlots 1
 
+        Contract.logError @String "Before redeem"
         nft6 <- marketplaceRedeem nft5
         void $ waitNSlots 1
 
+        Contract.logError @String "Before set price"
         nft7 <- setPrice (SetPriceParams nft6 (toEnum 20_000_000))
         void $ waitNSlots 1
 
+        Contract.logError @String "Before burn"
         burn nft7
         void $ waitNSlots 1
 

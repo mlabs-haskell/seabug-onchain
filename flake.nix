@@ -12,7 +12,7 @@
       flake = false;
     };
     plutip.url =
-      "github:mlabs-haskell/plutip?rev=ae394a66a1acb19f6a3c0efe6548d3f25122dd7b";
+      "github:mlabs-haskell/plutip?rev=f8f9e4650f09b448ffc5825434eb6f1714f9ddca";
 
     plutus-simple-model = {
       url =
@@ -105,13 +105,15 @@
             };
             inherit (plutip) cabalProjectLocal;
             inherit extraSources;
-            modules = haskellModules ++ [
+            modules = haskellModules
+                      ++ [
               ({ config, ... }: {
                 packages = {
                   plutus-simple-model.doHaddock = false;
                 };
               })
-            ];
+                      ]
+            ;
           };
         in
         project;

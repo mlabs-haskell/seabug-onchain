@@ -6,7 +6,7 @@ import Prelude (IO)
 -- import Plutus.Test.Model (readDefaultBchConfig)
 import Test.Tasty (defaultMain, testGroup)
 
--- import Test.Plutip qualified as Plutip
+import Test.Plutip qualified as Plutip
 
 import Plutus.Model (defaultMockConfig)
 import Plutus.Model.Mock.ProtocolParameters (defaultAlonzoParams)
@@ -52,6 +52,6 @@ main = do
       --     ]
       -- , FeeWithdraw.test
       -- [ Quickcheck.test
-      [ --Plutip.test
-        Resources.test $ defaultMockConfig defaultAlonzoParams
+      [ Plutip.test
+      , Resources.test $ defaultMockConfig defaultAlonzoParams
       ]

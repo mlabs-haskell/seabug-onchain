@@ -7,8 +7,7 @@ tests: true
 benchmarks: true
 
 allow-newer:
-    *:aeson
-  , size-based:template-haskell
+    size-based:template-haskell
 
 constraints:
     aeson >= 2
